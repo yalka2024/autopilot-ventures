@@ -1,0 +1,359 @@
+# Kubernetes Deployment for AutoPilot Ventures Autonomous Operation
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: autopilot-ventures
+  labels:
+    name: autopilot-ventures
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autopilot-config
+  namespace: autopilot-ventures
+data:
+  AUTONOMY_LEVEL: "semi_autonomous"
+  BUDGET_LIMIT: "1000"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: autopilot-secrets
+  namespace: autopilot-ventures
+type: Opaque
+data:
+  # Base64 encoded secrets (replace with actual values)
+  OPENAI_SECRET_KEY: <base64-encoded-key>
+  STRIPE_SECRET_KEY: <base64-encoded-key>
+  SERPAPI_KEY: <base64-encoded-key>
+
+---
+# Persistent Volume Claim for data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-data
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+
+---
+# Deployment for Master Agent
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-agent
+  namespace: autopilot-ventures
+  labels:
+    app: master-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master-agent
+  template:
+    metadata:
+      labels:
+        app: master-agent
+    spec:
+      containers:
+      - name: master-agent
+        image: autopilot-ventures:latest
+        imagePullPolicy: Always
+        command: ["python", "main.py", "--start-autonomous", "--autonomous-mode", "semi"]
+        ports:
+        - containerPort: 8501
+          name: dashboard
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: AUTONOMY_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: autopilot-config
+              key: AUTONOMY_LEVEL
+        - name: BUDGET_LIMIT
+          valueFrom:
+            configMapKeyRef:
+              name: autopilot-config
+              key: BUDGET_LIMIT
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: autopilot-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: autopilot-config
+              key: LOG_LEVEL
+        - name: OPENAI_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: autopilot-secrets
+              key: OPENAI_SECRET_KEY
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: autopilot-secrets
+              key: STRIPE_SECRET_KEY
+        - name: SERPAPI_KEY
+          valueFrom:
+            secretKeyRef:
+              name: autopilot-secrets
+              key: SERPAPI_KEY
+        volumeMounts:
+        - name: autopilot-data
+          mountPath: /app/data
+        - name: autopilot-logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8501
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: autopilot-data
+        persistentVolumeClaim:
+          claimName: autopilot-data
+      - name: autopilot-logs
+        emptyDir: {}
+
+---
+# Service for Master Agent
+apiVersion: v1
+kind: Service
+metadata:
+  name: master-agent-service
+  namespace: autopilot-ventures
+spec:
+  selector:
+    app: master-agent
+  ports:
+  - name: dashboard
+    port: 8501
+    targetPort: 8501
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: autopilot-ingress
+  namespace: autopilot-ventures
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: autopilot.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: master-agent-service
+            port:
+              number: 8501
+
+---
+# CronJob for Daily Discovery Cycle
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-discovery
+  namespace: autopilot-ventures
+spec:
+  schedule: "0 6 * * *"  # 6 AM UTC daily
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: discovery-job
+            image: autopilot-ventures:latest
+            command: ["python", "main.py", "--run-agent", "niche_research", "discovery_config.json"]
+            env:
+            - name: AUTONOMY_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: autopilot-config
+                  key: AUTONOMY_LEVEL
+            - name: OPENAI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: autopilot-secrets
+                  key: OPENAI_SECRET_KEY
+            volumeMounts:
+            - name: autopilot-data
+              mountPath: /app/data
+          volumes:
+          - name: autopilot-data
+            persistentVolumeClaim:
+              claimName: autopilot-data
+          restartPolicy: OnFailure
+
+---
+# CronJob for Weekly Evaluation
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-evaluation
+  namespace: autopilot-ventures
+spec:
+  schedule: "0 9 * * 1"  # 9 AM UTC on Mondays
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: evaluation-job
+            image: autopilot-ventures:latest
+            command: ["python", "main.py", "--run-workflow", "evaluation_workflow.json"]
+            env:
+            - name: AUTONOMY_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: autopilot-config
+                  key: AUTONOMY_LEVEL
+            - name: OPENAI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: autopilot-secrets
+                  key: OPENAI_SECRET_KEY
+            volumeMounts:
+            - name: autopilot-data
+              mountPath: /app/data
+          volumes:
+          - name: autopilot-data
+            persistentVolumeClaim:
+              claimName: autopilot-data
+          restartPolicy: OnFailure
+
+---
+# CronJob for Monthly Scaling Review
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: monthly-scaling
+  namespace: autopilot-ventures
+spec:
+  schedule: "0 10 1 * *"  # 10 AM UTC on 1st of month
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scaling-job
+            image: autopilot-ventures:latest
+            command: ["python", "main.py", "--run-workflow", "scaling_workflow.json"]
+            env:
+            - name: AUTONOMY_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: autopilot-config
+                  key: AUTONOMY_LEVEL
+            - name: OPENAI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: autopilot-secrets
+                  key: OPENAI_SECRET_KEY
+            volumeMounts:
+            - name: autopilot-data
+              mountPath: /app/data
+          volumes:
+          - name: autopilot-data
+            persistentVolumeClaim:
+              claimName: autopilot-data
+          restartPolicy: OnFailure
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: master-agent-hpa
+  namespace: autopilot-ventures
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: master-agent
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Prometheus ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: autopilot-monitor
+  namespace: autopilot-ventures
+spec:
+  selector:
+    matchLabels:
+      app: master-agent
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: master-agent-pdb
+  namespace: autopilot-ventures
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: master-agent 

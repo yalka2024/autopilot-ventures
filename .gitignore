@@ -1,0 +1,8 @@
+.env
+secrets.json
+*.key
+__pycache__/
+*.pyc
+autopilot_ventures.db
+backups/
+data/

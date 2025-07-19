@@ -1,0 +1,119 @@
+# Core AI and Agent Framework
+langchain-openai==0.0.5
+langchain-community==0.0.10
+crewai==0.148.0
+autogen==0.9.6
+
+# Web Framework and Dashboard
+streamlit==1.29.0
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Data Processing and Analysis
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+
+# Database and Storage
+sqlalchemy==2.0.23
+redis==5.0.1
+
+# API Integrations
+requests==2.31.0
+aiohttp==3.9.1
+stripe==7.8.0
+
+# Web Scraping and Automation
+beautifulsoup4==4.12.2
+
+# Monitoring and Logging
+prometheus-client==0.19.0
+structlog==23.2.0
+loguru==0.7.2
+
+# Security and Encryption
+cryptography==45.0.5
+python-dotenv==1.0.0
+bleach==6.1.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+unittest-mock==1.0.1
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+click==8.1.7
+rich==13.7.0
+tqdm==4.66.1
+
+# Content Generation
+openai>=1.10.0
+pillow==10.1.0
+python-multipart==0.0.6
+
+# Analytics and SEO
+serpapi==0.1.5
+
+# Ethical AI
+detoxify==0.5.2
+textstat==0.7.3
+
+# Development and Deployment
+docker==6.1.3
+
+# Multilingual Support
+googletrans==4.0.0rc1
+deep-translator==1.11.4
+
+# Pydantic for data validation
+pydantic>=2.0.0
+
+# Enhanced Security and Monitoring
+ratelimit==2.2.1
+bandit==1.7.5
+
+# Cloud Provider Support
+boto3>=1.34.0
+azure-identity>=1.15.0
+azure-keyvault-secrets>=4.7.0
+
+# Code Quality and Formatting
+black==23.12.1
+flake8==7.0.0
+
+# Load Testing
+locust==2.17.0
+
+# Performance Monitoring
+psutil==5.9.6
+
+# Autonomous Operation
+apscheduler==3.10.4
+beautifulsoup4==4.12.2
+requests==2.31.0
+lxml==4.9.3
+
+# Payment Integration
+stripe==7.8.0
+
+# Enhanced Cloud Support
+boto3>=1.34.0
+google-cloud-secret-manager>=2.16.0
+
+# Web Scraping & Automation
+selenium==4.15.2
+webdriver-manager==4.0.1
+fake-useragent==1.4.0
+
+# Enhanced Monitoring
+prometheus-client==0.19.0
+grafana-api==1.0.3
+
+# Income Analytics
+pandas>=2.2.0
+numpy>=1.26.0
+matplotlib==3.8.2
+seaborn==0.13.0 

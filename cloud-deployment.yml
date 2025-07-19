@@ -1,0 +1,311 @@
+# Cloud Deployment Configuration for AutoPilot Ventures Autonomous Operation
+
+# AWS CloudFormation Template for Autonomous Startup Factory
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AutoPilot Ventures Autonomous Startup Factory - Cloud Infrastructure'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+  
+  AutonomyLevel:
+    Type: String
+    Default: semi_autonomous
+    AllowedValues: [manual, semi_autonomous, fully_autonomous]
+  
+  BudgetLimit:
+    Type: Number
+    Default: 1000
+    Description: Monthly budget limit in USD
+
+Resources:
+  # ECS Cluster for autonomous agents
+  AutopilotCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub 'autopilot-ventures-${Environment}'
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+
+  # ECS Task Definition for Master Agent
+  MasterAgentTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub 'master-agent-${Environment}'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: master-agent
+          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/autopilot-ventures:latest'
+          Command:
+            - python
+            - main.py
+            - --start-autonomous
+            - --autonomous-mode
+            - !Ref AutonomyLevel
+          Environment:
+            - Name: ENVIRONMENT
+              Value: !Ref Environment
+            - Name: AUTONOMY_LEVEL
+              Value: !Ref AutonomyLevel
+            - Name: BUDGET_LIMIT
+              Value: !Ref BudgetLimit
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref MasterAgentLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: master-agent
+
+  # ECS Service for Master Agent
+  MasterAgentService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub 'master-agent-service-${Environment}'
+      Cluster: !Ref AutopilotCluster
+      TaskDefinition: !Ref MasterAgentTask
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref MasterAgentSecurityGroup
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+
+  # EventBridge Rule for Daily Discovery Cycle
+  DailyDiscoveryRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'daily-discovery-${Environment}'
+      Description: 'Daily niche discovery cycle at 6 AM UTC'
+      ScheduleExpression: 'cron(0 6 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !Ref AutopilotCluster
+          Id: daily-discovery
+          EcsParameters:
+            TaskDefinitionArn: !Ref MasterAgentTask
+            TaskCount: 1
+            LaunchType: FARGATE
+            NetworkConfiguration:
+              AwsvpcConfiguration:
+                AssignPublicIp: ENABLED
+                SecurityGroups:
+                  - !Ref MasterAgentSecurityGroup
+                Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+
+  # EventBridge Rule for Weekly Evaluation
+  WeeklyEvaluationRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'weekly-evaluation-${Environment}'
+      Description: 'Weekly venture evaluation on Mondays at 9 AM UTC'
+      ScheduleExpression: 'cron(0 9 ? * MON *)'
+      State: ENABLED
+      Targets:
+        - Arn: !Ref AutopilotCluster
+          Id: weekly-evaluation
+          EcsParameters:
+            TaskDefinitionArn: !Ref MasterAgentTask
+            TaskCount: 1
+            LaunchType: FARGATE
+            NetworkConfiguration:
+              AwsvpcConfiguration:
+                AssignPublicIp: ENABLED
+                SecurityGroups:
+                  - !Ref MasterAgentSecurityGroup
+                Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+
+  # EventBridge Rule for Monthly Scaling Review
+  MonthlyScalingRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'monthly-scaling-${Environment}'
+      Description: 'Monthly scaling review on 1st of month at 10 AM UTC'
+      ScheduleExpression: 'cron(0 10 1 * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !Ref AutopilotCluster
+          Id: monthly-scaling
+          EcsParameters:
+            TaskDefinitionArn: !Ref MasterAgentTask
+            TaskCount: 1
+            LaunchType: FARGATE
+            NetworkConfiguration:
+              AwsvpcConfiguration:
+                AssignPublicIp: ENABLED
+                SecurityGroups:
+                  - !Ref MasterAgentSecurityGroup
+                Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+
+  # Lambda Function for Budget Alerts
+  BudgetAlertFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'budget-alert-${Environment}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          
+          def handler(event, context):
+              sns = boto3.client('sns')
+              topic_arn = os.environ['ALERT_TOPIC_ARN']
+              
+              message = {
+                  'subject': 'AutoPilot Ventures Budget Alert',
+                  'body': f"Budget threshold reached: {event['current_spend']} / {event['budget_limit']}"
+              }
+              
+              sns.publish(
+                  TopicArn=topic_arn,
+                  Message=json.dumps(message),
+                  Subject='Budget Alert'
+              )
+              
+              return {'statusCode': 200}
+      Environment:
+        Variables:
+          ALERT_TOPIC_ARN: !Ref AlertTopic
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  # SNS Topic for Alerts
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'autopilot-alerts-${Environment}'
+      DisplayName: 'AutoPilot Ventures Alerts'
+
+  # CloudWatch Log Group
+  MasterAgentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/master-agent-${Environment}'
+      RetentionInDays: 30
+
+  # IAM Roles
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ecs-task-execution-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:autopilot-*'
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ecs-task-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt MasterAgentLogGroup.Arn
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'lambda-execution-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref AlertTopic
+
+  # Security Group
+  MasterAgentSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub 'master-agent-sg-${Environment}'
+      GroupDescription: 'Security group for Master Agent'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  ClusterName:
+    Description: 'ECS Cluster Name'
+    Value: !Ref AutopilotCluster
+    Export:
+      Name: !Sub '${AWS::StackName}-ClusterName'
+
+  MasterAgentServiceName:
+    Description: 'Master Agent Service Name'
+    Value: !Ref MasterAgentService
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceName'
+
+  AlertTopicArn:
+    Description: 'SNS Topic for Alerts'
+    Value: !Ref AlertTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-AlertTopic' 

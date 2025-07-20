@@ -15,10 +15,40 @@ Parameters:
     Default: semi_autonomous
     AllowedValues: [manual, semi_autonomous, fully_autonomous]
   
-  BudgetLimit:
+  BudgetThreshold:
     Type: Number
-    Default: 1000
-    Description: Monthly budget limit in USD
+    Default: 50
+    Description: Daily budget limit in USD
+
+  ImageUrl:
+    Type: String
+    Default: 160277203814.dkr.ecr.us-east-1.amazonaws.com/autopilot-ventures:latest
+    Description: ECR image URL for the AutoPilot Ventures container
+
+  PublicSubnet1:
+    Type: String
+    Default: subnet-019508ac109969ead
+    Description: First public subnet ID
+
+  PublicSubnet2:
+    Type: String
+    Default: subnet-08568f6a4c3f8699e
+    Description: Second public subnet ID
+
+  PublicSubnet3:
+    Type: String
+    Default: subnet-0bf09aaa391e1f3ba
+    Description: Third public subnet ID
+
+  VPC:
+    Type: String
+    Default: vpc-0e45373acb806c2f4
+    Description: VPC ID
+
+  SecurityGroup:
+    Type: String
+    Default: sg-0448617c7fd775290
+    Description: Security group ID for autopilot deploy
 
 Resources:
   # ECS Cluster for autonomous agents
@@ -41,13 +71,13 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '512'
-      Memory: '1024'
+      Cpu: '256'  # Reduced to 0.25 vCPU for Free Tier
+      Memory: '512'  # Reduced to 0.5 GB for Free Tier
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSTaskRole.Arn
       ContainerDefinitions:
         - Name: master-agent
-          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/autopilot-ventures:latest'
+          Image: !Ref ImageUrl
           Command:
             - python
             - main.py
@@ -59,8 +89,8 @@ Resources:
               Value: !Ref Environment
             - Name: AUTONOMY_LEVEL
               Value: !Ref AutonomyLevel
-            - Name: BUDGET_LIMIT
-              Value: !Ref BudgetLimit
+            - Name: BUDGET_THRESHOLD
+              Value: !Ref BudgetThreshold
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -81,10 +111,11 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-            - !Ref MasterAgentSecurityGroup
+            - !Ref SecurityGroup
           Subnets:
             - !Ref PublicSubnet1
             - !Ref PublicSubnet2
+            - !Ref PublicSubnet3
 
   # EventBridge Rule for Daily Discovery Cycle
   DailyDiscoveryRule:
@@ -105,7 +136,7 @@ Resources:
               AwsvpcConfiguration:
                 AssignPublicIp: ENABLED
                 SecurityGroups:
-                  - !Ref MasterAgentSecurityGroup
+                  - !Ref SecurityGroup
                 Subnets:
                   - !Ref PublicSubnet1
                   - !Ref PublicSubnet2
@@ -129,7 +160,7 @@ Resources:
               AwsvpcConfiguration:
                 AssignPublicIp: ENABLED
                 SecurityGroups:
-                  - !Ref MasterAgentSecurityGroup
+                  - !Ref SecurityGroup
                 Subnets:
                   - !Ref PublicSubnet1
                   - !Ref PublicSubnet2
@@ -153,7 +184,7 @@ Resources:
               AwsvpcConfiguration:
                 AssignPublicIp: ENABLED
                 SecurityGroups:
-                  - !Ref MasterAgentSecurityGroup
+                  - !Ref SecurityGroup
                 Subnets:
                   - !Ref PublicSubnet1
                   - !Ref PublicSubnet2
@@ -308,4 +339,4 @@ Outputs:
     Description: 'SNS Topic for Alerts'
     Value: !Ref AlertTopic
     Export:
-      Name: !Sub '${AWS::StackName}-AlertTopic' 
+      Name: !Sub '${AWS::StackName}-AlertTopic'

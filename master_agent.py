@@ -138,10 +138,12 @@ class MasterAgent:
 
     def _configure_scheduler(self) -> None:
         """Configure autonomous scheduling."""
-        # Daily niche discovery at 6 AM
+        # Daily niche discovery - run immediately for testing
+        from datetime import datetime
         self.scheduler.add_job(
             self._discovery_cycle,
-            CronTrigger(hour=6, minute=0),
+            'date',
+            run_date=datetime.now(),
             id="daily_discovery",
             name="Daily Niche Discovery",
             replace_existing=True,

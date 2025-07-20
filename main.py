@@ -399,6 +399,80 @@ class AutoPilotVenturesApp:
         }
 
 
+async def graceful_shutdown(app: AutoPilotVenturesApp, timeout: int = 30) -> None:
+    """
+    Perform graceful shutdown of the AutoPilot Ventures platform.
+    
+    Args:
+        app: The AutoPilotVenturesApp instance
+        timeout: Maximum time to wait for shutdown in seconds
+    """
+    log.info("🔄 Starting graceful shutdown...")
+    
+    try:
+        # 1. Stop the master agent scheduler
+        if app.master_agent:
+            log.info("🛑 Stopping Master Agent scheduler...")
+            app.master_agent.shutdown()
+            log.info("✅ Master Agent scheduler stopped")
+        
+        # 2. Cancel all running tasks
+        log.info("🛑 Cancelling all running tasks...")
+        tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+        
+        if tasks:
+            log.info(f"📋 Found {len(tasks)} running tasks to cancel")
+            for task in tasks:
+                task.cancel()
+            
+            # Wait for tasks to complete with timeout
+            try:
+                await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=timeout)
+                log.info("✅ All tasks cancelled successfully")
+            except asyncio.TimeoutError:
+                log.warning(f"⚠️ Some tasks did not complete within {timeout} seconds")
+        else:
+            log.info("✅ No running tasks found")
+        
+        # 3. Close database connections
+        log.info("🛑 Closing database connections...")
+        try:
+            from database import db_manager
+            if hasattr(db_manager, 'close'):
+                db_manager.close()
+            log.info("✅ Database connections closed")
+        except Exception as e:
+            log.warning(f"⚠️ Error closing database connections: {e}")
+        
+        # 4. Stop Prometheus metrics server
+        log.info("🛑 Stopping Prometheus metrics server...")
+        try:
+            from prometheus_client import REGISTRY
+            # Clear all metrics
+            for metric in list(REGISTRY._collector_to_names.keys()):
+                REGISTRY.unregister(metric)
+            log.info("✅ Prometheus metrics server stopped")
+        except Exception as e:
+            log.warning(f"⚠️ Error stopping Prometheus server: {e}")
+        
+        # 5. Final cleanup
+        log.info("🛑 Performing final cleanup...")
+        try:
+            # Clear any remaining resources
+            if hasattr(app, 'agents'):
+                app.agents.clear()
+            log.info("✅ Final cleanup completed")
+        except Exception as e:
+            log.warning(f"⚠️ Error during final cleanup: {e}")
+        
+        log.info("✅ Graceful shutdown completed successfully")
+        
+    except Exception as e:
+        log.error(f"❌ Error during graceful shutdown: {e}")
+        # Force exit if graceful shutdown fails
+        sys.exit(1)
+
+
 async def main():
     """Main application entry point."""
     parser = argparse.ArgumentParser(description="AutoPilot Ventures Platform")
@@ -488,10 +562,15 @@ async def main():
                 # Keep the application running for autonomous operation
                 while True:
                     await asyncio.sleep(60)  # Check every minute
-            except KeyboardInterrupt:
-                print("\n🛑 Stopping autonomous operation...")
+            except (KeyboardInterrupt, asyncio.CancelledError):
+                log.info("Shutting down autonomous mode...")
                 if app.master_agent:
-                    app.master_agent.shutdown()
+                    app.master_agent.shutdown()  # Stop scheduler
+                try:
+                    await asyncio.gather(*asyncio.all_tasks(), return_exceptions=True)  # Cancel pending tasks
+                except Exception as e:
+                    log.warning(f"Error during task cleanup: {e}")
+                log.info("Shutdown complete")
                 print("✅ Autonomous operation stopped.")
 
         elif args.master_status:
@@ -532,17 +611,15 @@ async def main():
             print("  python main.py --master-status")
             print("  python main.py --income-report")
 
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, asyncio.CancelledError):
         print("\n👋 Goodbye!")
-        # Cleanup
-        if app.master_agent:
-            app.master_agent.shutdown()
+        # Graceful shutdown
+        await graceful_shutdown(app)
     except Exception as e:
         logger.error(f"Application error: {e}")
         print(f"❌ Error: {e}")
-        # Cleanup on error
-        if app.master_agent:
-            app.master_agent.shutdown()
+        # Graceful shutdown on error
+        await graceful_shutdown(app)
         sys.exit(1)
 
 

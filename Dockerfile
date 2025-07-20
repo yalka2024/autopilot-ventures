@@ -2,7 +2,7 @@
 # Multi-stage build for optimized production image
 
 # Base stage
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Development stage
-FROM base as development
+FROM base AS development
 
 # Install development dependencies
 RUN pip install --no-cache-dir \
@@ -53,10 +53,10 @@ RUN chmod +x main.py
 EXPOSE 8501 9090
 
 # Development command
-CMD ["python", "main.py", "start", "--goals", "productivity", "wellness", "technology"]
+CMD ["python", "main.py", "--start-autonomous", "--autonomous-mode", "semi"]
 
 # Production stage
-FROM base as production
+FROM base AS production
 
 # Copy source code
 COPY . .
@@ -81,10 +81,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8501/ || exit 1
 
 # Production command
-CMD ["python", "main.py", "start", "--daemon"]
+CMD ["python", "main.py", "--start-autonomous", "--autonomous-mode", "semi"]
 
 # Testing stage
-FROM development as testing
+FROM development AS testing
 
 # Run tests
 RUN python -m pytest tests/ -v

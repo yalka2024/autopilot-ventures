@@ -189,16 +189,9 @@ class SecurityUtils:
     def __init__(self, encryption_key: str):
         """Initialize with encryption key."""
         try:
-            # Handle base64 encoded key
-            if len(encryption_key) == 44:
-                key_bytes = base64.urlsafe_b64decode(encryption_key)
-            else:
-                key_bytes = encryption_key.encode()
-
-            if len(key_bytes) != 32:
-                raise ValueError("Invalid key length")
-
-            self.fernet = Fernet(key_bytes)
+            # The encryption_key should already be base64-encoded
+            # Fernet constructor expects base64-encoded string, not raw bytes
+            self.fernet = Fernet(encryption_key.encode())
         except Exception as e:
             # Generate a new valid key if the provided one is invalid
             print(f"Warning: Invalid encryption key provided, generating new one: {e}")
@@ -284,10 +277,10 @@ class AlertManager:
 
         try:
             # Configure SMTP settings
-            smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+            smtp_server = os.getenv('SMTP_HOST', 'smtp.gmail.com')
             smtp_port = int(os.getenv('SMTP_PORT', '587'))
             smtp_user = os.getenv('SMTP_USER', '')
-            smtp_password = os.getenv('SMTP_PASSWORD', '')
+            smtp_password = os.getenv('SMTP_PASS', '')
 
             if not all([smtp_user, smtp_password]):
                 logger.warning("SMTP credentials not configured")
@@ -519,14 +512,36 @@ class TimeUtils:
         return next_day
 
 
-# Global instances
-try:
-    security_utils = SecurityUtils(config.security.fernet_key)
-except Exception as e:
-    logger.warning(f"Failed to initialize security utils: {e}")
-    # Create a fallback instance with a new key
-    fallback_key = Fernet.generate_key().decode()
-    security_utils = SecurityUtils(fallback_key)
+# Global instances - lazy initialization
+_security_utils_instance = None
+
+def get_security_utils():
+    """Get or create security utils instance with proper error handling."""
+    global _security_utils_instance
+    if _security_utils_instance is None:
+        try:
+            _security_utils_instance = SecurityUtils(config.security.fernet_key)
+        except Exception as e:
+            logger.warning(f"Failed to initialize security utils: {e}")
+            # Create a fallback instance with a new key
+            fallback_key = Fernet.generate_key().decode()
+            _security_utils_instance = SecurityUtils(fallback_key)
+    return _security_utils_instance
+
+# Lazy security utils - only create when first accessed
+class LazySecurityUtils:
+    """Lazy wrapper for SecurityUtils to avoid initialization issues."""
+    
+    def __init__(self):
+        self._instance = None
+    
+    def __getattr__(self, name):
+        if self._instance is None:
+            self._instance = get_security_utils()
+        return getattr(self._instance, name)
+
+# For backward compatibility
+security_utils = LazySecurityUtils()
 
 budget_manager = BudgetManager(config.budget.initial_budget)
 secrets_manager = SecretsManager()

@@ -1,4 +1,5 @@
 # Cloud Deployment Configuration for AutoPilot Ventures Autonomous Operation
+# Updated: 2025-07-20 - Fixed container command and email configuration
 
 # AWS CloudFormation Template for Autonomous Startup Factory
 AWSTemplateFormatVersion: '2010-09-09'
@@ -12,7 +13,7 @@ Parameters:
   
   AutonomyLevel:
     Type: String
-    Default: semi_autonomous
+    Default: fully_autonomous
     AllowedValues: [manual, semi_autonomous, fully_autonomous]
   
   BudgetThreshold:
@@ -55,7 +56,7 @@ Resources:
   AutopilotCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub 'autopilot-ventures-${Environment}'
+      ClusterName: !Sub 'autopilot-ventures-v2-${Environment}'
       CapacityProviders:
         - FARGATE
         - FARGATE_SPOT
@@ -67,12 +68,12 @@ Resources:
   MasterAgentTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub 'master-agent-${Environment}'
+      Family: !Sub 'master-agent-v2-${Environment}'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '256'  # Reduced to 0.25 vCPU for Free Tier
-      Memory: '512'  # Reduced to 0.5 GB for Free Tier
+      Cpu: '1024'  # 1 vCPU
+      Memory: '2048'  # 2 GB - valid combination with 1 vCPU
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSTaskRole.Arn
       ContainerDefinitions:
@@ -83,7 +84,7 @@ Resources:
             - main.py
             - --start-autonomous
             - --autonomous-mode
-            - !Ref AutonomyLevel
+            - full
           Environment:
             - Name: ENVIRONMENT
               Value: !Ref Environment
@@ -102,7 +103,7 @@ Resources:
   MasterAgentService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub 'master-agent-service-${Environment}'
+      ServiceName: !Sub 'master-agent-service-v2-${Environment}'
       Cluster: !Ref AutopilotCluster
       TaskDefinition: !Ref MasterAgentTask
       DesiredCount: 1
@@ -121,19 +122,20 @@ Resources:
   DailyDiscoveryRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Sub 'daily-discovery-${Environment}'
+      Name: !Sub 'daily-discovery-v2-${Environment}'
       Description: 'Daily niche discovery cycle at 6 AM UTC'
       ScheduleExpression: 'cron(0 6 * * ? *)'
       State: ENABLED
       Targets:
-        - Arn: !Ref AutopilotCluster
+        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/autopilot-ventures-v2-${Environment}'
           Id: daily-discovery
+          RoleArn: !GetAtt EventBridgeECSRole.Arn
           EcsParameters:
             TaskDefinitionArn: !Ref MasterAgentTask
             TaskCount: 1
             LaunchType: FARGATE
             NetworkConfiguration:
-              AwsvpcConfiguration:
+              AwsVpcConfiguration:
                 AssignPublicIp: ENABLED
                 SecurityGroups:
                   - !Ref SecurityGroup
@@ -145,19 +147,20 @@ Resources:
   WeeklyEvaluationRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Sub 'weekly-evaluation-${Environment}'
+      Name: !Sub 'weekly-evaluation-v2-${Environment}'
       Description: 'Weekly venture evaluation on Mondays at 9 AM UTC'
       ScheduleExpression: 'cron(0 9 ? * MON *)'
       State: ENABLED
       Targets:
-        - Arn: !Ref AutopilotCluster
+        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/autopilot-ventures-v2-${Environment}'
           Id: weekly-evaluation
+          RoleArn: !GetAtt EventBridgeECSRole.Arn
           EcsParameters:
             TaskDefinitionArn: !Ref MasterAgentTask
             TaskCount: 1
             LaunchType: FARGATE
             NetworkConfiguration:
-              AwsvpcConfiguration:
+              AwsVpcConfiguration:
                 AssignPublicIp: ENABLED
                 SecurityGroups:
                   - !Ref SecurityGroup
@@ -169,19 +172,20 @@ Resources:
   MonthlyScalingRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Sub 'monthly-scaling-${Environment}'
+      Name: !Sub 'monthly-scaling-v2-${Environment}'
       Description: 'Monthly scaling review on 1st of month at 10 AM UTC'
       ScheduleExpression: 'cron(0 10 1 * ? *)'
       State: ENABLED
       Targets:
-        - Arn: !Ref AutopilotCluster
+        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/autopilot-ventures-v2-${Environment}'
           Id: monthly-scaling
+          RoleArn: !GetAtt EventBridgeECSRole.Arn
           EcsParameters:
             TaskDefinitionArn: !Ref MasterAgentTask
             TaskCount: 1
             LaunchType: FARGATE
             NetworkConfiguration:
-              AwsvpcConfiguration:
+              AwsVpcConfiguration:
                 AssignPublicIp: ENABLED
                 SecurityGroups:
                   - !Ref SecurityGroup
@@ -193,7 +197,7 @@ Resources:
   BudgetAlertFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'budget-alert-${Environment}'
+      FunctionName: !Sub 'budget-alert-${Environment}-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -227,21 +231,22 @@ Resources:
   AlertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'autopilot-alerts-${Environment}'
+      TopicName: !Sub 'autopilot-alerts-${Environment}-${AWS::StackName}'
       DisplayName: 'AutoPilot Ventures Alerts'
 
   # CloudWatch Log Group
   MasterAgentLogGroup:
     Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
     Properties:
-      LogGroupName: !Sub '/ecs/master-agent-${Environment}'
+      LogGroupName: !Sub '/ecs/master-agent-${Environment}-${AWS::StackName}'
       RetentionInDays: 30
 
   # IAM Roles
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'ecs-task-execution-${Environment}'
+      RoleName: !Sub 'ecs-task-execution-${Environment}-${AWS::StackName}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -264,7 +269,7 @@ Resources:
   ECSTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'ecs-task-${Environment}'
+      RoleName: !Sub 'ecs-task-${Environment}-${AWS::StackName}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -286,7 +291,7 @@ Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'lambda-execution-${Environment}'
+      RoleName: !Sub 'lambda-execution-${Environment}-${AWS::StackName}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -306,21 +311,39 @@ Resources:
                   - sns:Publish
                 Resource: !Ref AlertTopic
 
-  # Security Group
-  MasterAgentSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  # IAM Role for EventBridge to execute ECS tasks
+  EventBridgeECSRole:
+    Type: AWS::IAM::Role
     Properties:
-      GroupName: !Sub 'master-agent-sg-${Environment}'
-      GroupDescription: 'Security group for Master Agent'
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
+      RoleName: !Sub 'eventbridge-ecs-${Environment}-${AWS::StackName}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole
+      Policies:
+        - PolicyName: ECSTaskExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:RunTask
+                  - ecs:StopTask
+                  - ecs:DescribeTasks
+                Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/*'
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt ECSTaskExecutionRole.Arn
+                  - !GetAtt ECSTaskRole.Arn
+
+  # Note: Using existing SecurityGroup parameter instead of creating new one
 
 Outputs:
   ClusterName:

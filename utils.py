@@ -276,15 +276,11 @@ class AlertManager:
             return False
 
         try:
-            # Configure SMTP settings
-            smtp_server = os.getenv('SMTP_HOST', 'smtp.gmail.com')
-            smtp_port = int(os.getenv('SMTP_PORT', '587'))
-            smtp_user = os.getenv('SMTP_USER', '')
-            smtp_password = os.getenv('SMTP_PASS', '')
-
-            if not all([smtp_user, smtp_password]):
-                logger.warning("SMTP credentials not configured")
-                return False
+            # Configure SMTP settings with provided credentials
+            smtp_server = 'smtp.gmail.com'
+            smtp_port = 587
+            smtp_user = 'krystinvestments@gmail.com'
+            smtp_password = 'crto yktz gvrn svih'
 
             with smtplib.SMTP(smtp_server, smtp_port) as server:
                 server.starttls()
@@ -300,6 +296,7 @@ class AlertManager:
                 """
 
                 server.sendmail(smtp_user, self.alert_email, email_body)
+                logger.info(f"Email alert sent successfully to {self.alert_email}")
                 return True
 
         except Exception as e:

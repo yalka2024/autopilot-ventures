@@ -62,9 +62,7 @@ class MonitoringConfig:
     prometheus_port: int = field(default=9090)
     metrics_enabled: bool = field(default=True)
     alerting_enabled: bool = field(default=True)
-    alert_email: str = field(
-        default_factory=lambda: os.getenv('ALERT_EMAIL', '')
-    )
+    alert_email: str = field(default='krystinvestments@gmail.com')
     slack_webhook_url: str = field(
         default_factory=lambda: os.getenv('SLACK_WEBHOOK_URL', '')
     )

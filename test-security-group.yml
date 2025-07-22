@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Test template for VPC and Security Group access'
+
+Parameters:
+  VPC:
+    Type: String
+    Default: vpc-0e6882b31d339a158
+    Description: VPC ID
+
+Resources:
+  # Test Security Group
+  TestSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: test-autopilot-sg
+      GroupDescription: 'Test security group for AutoPilot Ventures'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: 'Allow inbound traffic on port 8000'
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: 'Allow all outbound traffic'
+
+Outputs:
+  SecurityGroupId:
+    Description: 'Test Security Group ID'
+    Value: !Ref TestSecurityGroup 

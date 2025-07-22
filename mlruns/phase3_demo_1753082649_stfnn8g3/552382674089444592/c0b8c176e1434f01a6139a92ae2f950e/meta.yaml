@@ -1,0 +1,14 @@
+artifact_uri: file:C:/Users/yanp0/OneDrive/Documentos/proyectos/autopilot ventures/mlruns/phase3_demo_1753082649_stfnn8g3/552382674089444592/c0b8c176e1434f01a6139a92ae2f950e/artifacts
+end_time: 1753057451071
+entry_point_name: ''
+experiment_id: '552382674089444592'
+lifecycle_stage: active
+run_id: c0b8c176e1434f01a6139a92ae2f950e
+run_name: product_feature_testing
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1753057450899
+status: 3
+tags: []
+user_id: yanp0

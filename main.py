@@ -16,7 +16,7 @@ if sys.platform.startswith("win"):
 from config import config
 from utils import budget_manager, generate_id, log, security_utils, alert_manager, secrets_manager
 from database import db_manager
-from orchestrator import get_orchestrator
+from orchestrator import AgentOrchestrator
 from agents import (
     NicheResearchAgent,
     MVPDesignAgent,
@@ -212,7 +212,7 @@ class AutoPilotVenturesApp:
             )
 
             self.startup_id = startup.id
-            self.orchestrator = get_orchestrator(self.startup_id)
+            self.orchestrator = AgentOrchestrator(self.startup_id)
 
             # Log startup creation
             log.info("Startup created", startup_id=startup.id, name=name, niche=niche, language=language)

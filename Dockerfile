@@ -1,24 +1,19 @@
-# AutoPilot Ventures Dockerfile
-# Multi-stage build for optimized production image
-
-# Base stage
-FROM python:3.11-slim AS base
+# Use Python 3.11 slim image for better compatibility
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    build-essential \
     curl \
-    wget \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set work directory
 WORKDIR /app
 
 # Copy requirements first for better caching
@@ -28,66 +23,23 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Development stage
-FROM base AS development
-
-# Install development dependencies
-RUN pip install --no-cache-dir \
-    pytest \
-    pytest-asyncio \
-    pytest-mock \
-    black \
-    flake8 \
-    mypy
-
-# Copy source code
+# Copy application code
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p data logs startups templates uploads exports backups
+RUN mkdir -p /app/logs /app/data /app/uploads /app/exports /app/backups /app/mlruns
 
-# Set permissions
-RUN chmod +x main.py
-
-# Expose ports
-EXPOSE 8501 9090
-
-# Development command
-CMD ["python", "main.py", "--start-autonomous", "--autonomous-mode", "semi"]
-
-# Production stage
-FROM base AS production
-
-# Copy source code
-COPY . .
-
-# Create necessary directories
-RUN mkdir -p data logs startups templates uploads exports backups
-
-# Set permissions
-RUN chmod +x main.py
-
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash autopilot && \
-    chown -R autopilot:autopilot /app
-
-USER autopilot
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash app && \
+    chown -R app:app /app
+USER app
 
 # Expose ports
-EXPOSE 8501 9090
+EXPOSE 8000 9090
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8501/ || exit 1
+# Health check - use the health server
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Production command
-CMD ["python", "main.py", "--start-autonomous", "--autonomous-mode", "semi"]
-
-# Testing stage
-FROM development AS testing
-
-# Run tests
-RUN python -m pytest tests/ -v
-
-# Default to development
-FROM development 
+# Default command - run the main AutoPilot Ventures application
+CMD ["python", "main.py"] 

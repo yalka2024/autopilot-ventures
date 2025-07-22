@@ -106,6 +106,49 @@ class MultilingualConfig:
 
 
 @dataclass
+class StripeConfig:
+    """Stripe payment processing configuration."""
+    
+    secret_key: str = field(
+        default_factory=lambda: os.getenv('STRIPE_SECRET_KEY', '')
+    )
+    publishable_key: str = field(
+        default_factory=lambda: os.getenv('STRIPE_PUBLISHABLE_KEY', '')
+    )
+    webhook_secret: str = field(
+        default_factory=lambda: os.getenv('STRIPE_WEBHOOK_SECRET', '')
+    )
+    currency: str = field(default='usd')
+    payment_methods: List[str] = field(
+        default_factory=lambda: ['card', 'paypal', 'apple_pay', 'google_pay']
+    )
+
+
+@dataclass
+class MessageBusConfig:
+    """Agent message bus configuration."""
+    
+    max_message_queue_size: int = field(default=1000)
+    message_ttl: int = field(default=300)  # 5 minutes
+    context_ttl: int = field(default=3600)  # 1 hour
+    max_concurrent_processing: int = field(default=10)
+    enable_conflict_resolution: bool = field(default=True)
+    enable_shared_context: bool = field(default=True)
+
+
+@dataclass
+class CulturalConfig:
+    """Cultural intelligence configuration."""
+    
+    supported_countries: List[str] = field(
+        default_factory=lambda: ['US', 'CN', 'ES', 'FR', 'DE', 'JP', 'BR', 'IN', 'RU', 'AE']
+    )
+    cultural_data_update_interval: int = field(default=30)  # days
+    market_research_enabled: bool = field(default=True)
+    translation_quality_threshold: float = field(default=0.8)
+
+
+@dataclass
 class Config:
     """Enhanced main configuration class."""
     
@@ -117,11 +160,15 @@ class Config:
     multilingual: MultilingualConfig = field(
         default_factory=MultilingualConfig
     )
+    stripe: StripeConfig = field(default_factory=StripeConfig)
+    message_bus: MessageBusConfig = field(default_factory=MessageBusConfig)
+    cultural: CulturalConfig = field(default_factory=CulturalConfig)
     
     def __post_init__(self):
         """Validate configuration after initialization."""
         self._validate_fernet_key()
         self._validate_openai_key()
+        self._validate_stripe_config()
     
     def _validate_fernet_key(self):
         """Validate and fix Fernet key if needed."""
@@ -154,6 +201,13 @@ class Config:
         """Validate OpenAI API key."""
         if not self.ai.openai_key:
             raise ValueError("OpenAI API key is required")
+    
+    def _validate_stripe_config(self):
+        """Validate Stripe configuration."""
+        if not self.stripe.secret_key:
+            print("Warning: Stripe secret key not configured - payment processing disabled")
+        if not self.stripe.webhook_secret:
+            print("Warning: Stripe webhook secret not configured - webhook processing disabled")
     
     def __getattr__(self, name):
         """Backward compatibility for 'api' attribute."""

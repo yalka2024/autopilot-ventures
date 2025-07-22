@@ -1,0 +1,291 @@
+# AutoPilot Ventures - Kubernetes Deployment for Google Cloud
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: autopilot-ventures
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autopilot-ventures
+  namespace: autopilot-ventures
+  labels:
+    app: autopilot-ventures
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: autopilot-ventures
+  template:
+    metadata:
+      labels:
+        app: autopilot-ventures
+    spec:
+      containers:
+      - name: autopilot-ventures
+        image: gcr.io/autopilot-ventures/autopilot-ventures:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: PORT
+          value: "8000"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: AUTONOMY_LEVEL
+          value: "fully_autonomous"
+        - name: PHASE3_ENABLED
+          value: "true"
+        - name: VECTOR_MEMORY_ENABLED
+          value: "true"
+        - name: SELF_TUNING_ENABLED
+          value: "true"
+        - name: REINFORCEMENT_LEARNING_ENABLED
+          value: "true"
+        - name: AUTONOMOUS_WORKFLOW_ENABLED
+          value: "true"
+        envFrom:
+        - secretRef:
+            name: autopilot-secrets
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: uploads-volume
+          mountPath: /app/uploads
+        - name: exports-volume
+          mountPath: /app/exports
+        - name: backups-volume
+          mountPath: /app/backups
+        - name: mlruns-volume
+          mountPath: /app/mlruns
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: autopilot-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: autopilot-logs-pvc
+      - name: uploads-volume
+        persistentVolumeClaim:
+          claimName: autopilot-uploads-pvc
+      - name: exports-volume
+        persistentVolumeClaim:
+          claimName: autopilot-exports-pvc
+      - name: backups-volume
+        persistentVolumeClaim:
+          claimName: autopilot-backups-pvc
+      - name: mlruns-volume
+        persistentVolumeClaim:
+          claimName: autopilot-mlruns-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autopilot-ventures-service
+  namespace: autopilot-ventures
+  labels:
+    app: autopilot-ventures
+spec:
+  selector:
+    app: autopilot-ventures
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: autopilot-ventures-ingress
+  namespace: autopilot-ventures
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "autopilot-ventures-ip"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - autopilot-ventures.com
+    - www.autopilot-ventures.com
+    secretName: autopilot-ventures-tls
+  rules:
+  - host: autopilot-ventures.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: autopilot-ventures-service
+            port:
+              number: 80
+  - host: www.autopilot-ventures.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: autopilot-ventures-service
+            port:
+              number: 80
+---
+# Persistent Volume Claims
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-data-pvc
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-logs-pvc
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-uploads-pvc
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-exports-pvc
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-backups-pvc
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autopilot-mlruns-pvc
+  namespace: autopilot-ventures
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autopilot-ventures-hpa
+  namespace: autopilot-ventures
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: autopilot-ventures
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# Prometheus ServiceMonitor for monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: autopilot-ventures-monitor
+  namespace: autopilot-ventures
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: autopilot-ventures
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics 

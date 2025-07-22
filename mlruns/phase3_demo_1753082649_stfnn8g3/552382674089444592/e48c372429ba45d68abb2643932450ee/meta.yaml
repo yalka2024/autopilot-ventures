@@ -1,0 +1,14 @@
+artifact_uri: file:C:/Users/yanp0/OneDrive/Documentos/proyectos/autopilot ventures/mlruns/phase3_demo_1753082649_stfnn8g3/552382674089444592/e48c372429ba45d68abb2643932450ee/artifacts
+end_time: 1753057451220
+entry_point_name: ''
+experiment_id: '552382674089444592'
+lifecycle_stage: active
+run_id: e48c372429ba45d68abb2643932450ee
+run_name: pricing_strategy_analysis
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1753057451075
+status: 3
+tags: []
+user_id: yanp0

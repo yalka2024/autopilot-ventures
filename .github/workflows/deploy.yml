@@ -1,4 +1,4 @@
-name: Deploy to Google Cloud
+name: Deploy to Cloud Run
 
 on:
   push:
@@ -9,8 +9,7 @@ on:
 env:
   PROJECT_ID: autopilot-ventures
   REGION: us-central1
-  CLUSTER_NAME: autopilot-cluster
-  NAMESPACE: autopilot-ventures
+  SERVICE_NAME: autopilot-ventures
 
 jobs:
   deploy:
@@ -19,36 +18,32 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+    
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
     
-    - name: Configure Docker for GCR
-      run: gcloud auth configure-docker
-    
-    - name: Get GKE credentials
+    - name: Deploy to Cloud Run
       run: |
-        gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --source . \
           --region ${{ env.REGION }} \
-          --project ${{ env.PROJECT_ID }}
+          --platform managed \
+          --allow-unauthenticated \
+          --memory 2Gi \
+          --cpu 2 \
+          --max-instances 10 \
+          --set-env-vars ENVIRONMENT=production,PORT=8000 \
+          --set-secrets OPENAI_API_KEY=openai-api-key:latest \
+          --set-secrets SECRET_KEY=secret-key:latest \
+          --set-secrets DATABASE_URL=database-url:latest \
+          --set-secrets REDIS_HOST=redis-host:latest
     
-    - name: Build and push Docker image
+    - name: Get service URL
       run: |
-        docker build -f Dockerfile.gcp \
-          -t gcr.io/${{ env.PROJECT_ID }}/autopilot-ventures:${{ github.sha }} \
-          -t gcr.io/${{ env.PROJECT_ID }}/autopilot-ventures:latest .
-        docker push gcr.io/${{ env.PROJECT_ID }}/autopilot-ventures:${{ github.sha }}
-        docker push gcr.io/${{ env.PROJECT_ID }}/autopilot-ventures:latest
-    
-    - name: Deploy to GKE
-      run: |
-        kubectl set image deployment/autopilot-ventures \
-          autopilot-ventures=gcr.io/${{ env.PROJECT_ID }}/autopilot-ventures:${{ github.sha }} \
-          --namespace=${{ env.NAMESPACE }}
-        kubectl rollout status deployment/autopilot-ventures --namespace=${{ env.NAMESPACE }}
-    
-    - name: Verify deployment
-      run: |
-        kubectl get pods --namespace=${{ env.NAMESPACE }}
-        kubectl get services --namespace=${{ env.NAMESPACE }} 
+        echo "Service URL: $(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format='value(status.url)')" 

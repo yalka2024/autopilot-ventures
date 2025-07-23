@@ -1,7 +1,7 @@
 steps:
-  # Build the Docker image
+  # Build the Docker image with minimal test configuration
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'Dockerfile.gcp', '-t', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA', '.']
+    args: ['build', '--platform', 'linux/amd64', '-f', 'Dockerfile.test', '-t', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA', '.']
   
   # Push the Docker image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -15,7 +15,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
   
-  # Deploy to Cloud Run (much simpler than GKE)
+  # Deploy to Cloud Run with extended timeout
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -26,11 +26,12 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=8080'
-      - '--memory=2Gi'
-      - '--cpu=2'
-      - '--max-instances=10'
-      - '--min-instances=1'
-      - '--set-env-vars=PYTHONPATH=/app,ENVIRONMENT=production,LOG_LEVEL=INFO'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--max-instances=5'
+      - '--min-instances=0'
+      - '--timeout=600'
+      - '--concurrency=80'
     id: 'deploy-cloud-run'
 
 images:

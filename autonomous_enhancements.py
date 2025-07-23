@@ -1,651 +1,573 @@
-"""Advanced Autonomous Enhancements for AutoPilot Ventures."""
+# PHASE 1: CORE AUTONOMOUS LEARNING SYSTEM
+# Achieving 100% Autonomy Baseline
 
 import asyncio
 import json
-import logging
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from enum import Enum
 import numpy as np
-from collections import defaultdict
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional, Tuple
 import redis
 import chromadb
 from chromadb.config import Settings
+import logging
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier
+import uuid
+import pickle
+import os
+from dataclasses import dataclass
+from enum import Enum
 
-from config import config
-from utils import generate_id, log
-from agent_message_bus import get_message_bus, MessageType, MessagePriority
-
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('autopilot.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
-
-class LearningType(Enum):
-    """Types of learning for agents."""
-    
-    REINFORCEMENT = "reinforcement"
-    SUPERVISED = "supervised"
-    UNSUPERVISED = "unsupervised"
-    TRANSFER = "transfer"
-
-
-class DecisionConfidence(Enum):
-    """Decision confidence levels."""
-    
-    LOW = "low"           # < 0.3
-    MEDIUM = "medium"     # 0.3 - 0.7
-    HIGH = "high"         # > 0.7
-
+class AgentType(Enum):
+    NICHE_RESEARCHER = "niche_researcher"
+    MVP_DESIGNER = "mvp_designer"
+    MARKETING_STRATEGIST = "marketing_strategist"
+    CONTENT_CREATOR = "content_creator"
+    ANALYTICS_AGENT = "analytics_agent"
+    OPERATIONS_AGENT = "operations_agent"
+    FUNDING_AGENT = "funding_agent"
+    LEGAL_AGENT = "legal_agent"
+    HR_AGENT = "hr_agent"
+    SUPPORT_AGENT = "support_agent"
+    MASTER_AGENT = "master_agent"
 
 @dataclass
-class AgentMemory:
-    """Agent memory for learning and context."""
-    
-    agent_id: str
-    memory_type: str
-    data: Dict[str, Any]
+class Memory:
+    """Vector memory entry for agent experiences"""
+    id: str
+    agent_type: AgentType
+    action: str
+    context: str
+    outcome: str
+    success_score: float
     timestamp: datetime
-    importance: float = 0.5
-    access_count: int = 0
-    last_accessed: datetime = field(default_factory=datetime.utcnow)
-
+    importance_score: float
+    embedding: Optional[List[float]] = None
 
 @dataclass
 class LearningOutcome:
-    """Learning outcome from agent actions."""
-    
+    """Reinforcement learning outcome"""
     agent_id: str
-    action_type: str
+    action: str
+    state: str
+    reward: float
+    next_state: str
     success: bool
-    performance_metric: float
-    learning_type: LearningType
-    timestamp: datetime
-    context: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class DecisionTree:
-    """Decision tree for agent decision making."""
-    
-    decision_id: str
-    agent_id: str
-    decision_type: str
-    conditions: List[Dict[str, Any]]
-    actions: List[Dict[str, Any]]
     confidence: float
-    success_rate: float = 0.0
-    usage_count: int = 0
-
+    timestamp: datetime
 
 class VectorMemoryManager:
-    """Vector-based memory management for agents."""
+    """Manages vector memory for agent experiences using ChromaDB"""
     
-    def __init__(self, startup_id: str):
-        self.startup_id = startup_id
-        self.memory_id = generate_id("vector_memory")
+    def __init__(self, collection_name: str = "autopilot_ventures"):
+        self.collection_name = collection_name
+        self.client = chromadb.PersistentClient(path="./chroma_db")
         
-        # Initialize ChromaDB with new configuration
-        self.chroma_client = chromadb.PersistentClient(
-            path=f"./data/memory_{startup_id}"
-        )
-        
-        # Create collections for different memory types
+        # Create or get collection
         try:
-            self.context_collection = self.chroma_client.get_or_create_collection(
-                name=f"context_{startup_id}",
-                metadata={"description": "Agent context memory"}
-            )
+            self.collection = self.client.get_collection(collection_name)
+        except:
+            self.collection = self.client.create_collection(collection_name)
+        
+        # Initialize vectorizer for text embeddings
+        self.vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+        self.vectorizer_fitted = False
+        
+        logger.info(f"VectorMemoryManager initialized for collection: {collection_name}")
+    
+    def _get_text_embedding(self, text: str) -> List[float]:
+        """Generate text embedding using TF-IDF"""
+        try:
+            if not self.vectorizer_fitted:
+                # Fit on sample data first
+                sample_texts = ["business creation", "market research", "revenue generation", "customer acquisition"]
+                self.vectorizer.fit(sample_texts)
+                self.vectorizer_fitted = True
             
-            self.learning_collection = self.chroma_client.get_or_create_collection(
-                name=f"learning_{startup_id}",
-                metadata={"description": "Learning outcomes"}
-            )
-            
-            self.decision_collection = self.chroma_client.get_or_create_collection(
-                name=f"decisions_{startup_id}",
-                metadata={"description": "Decision patterns"}
-            )
+            # Transform the input text
+            embedding = self.vectorizer.transform([text]).toarray()[0]
+            return embedding.tolist()
         except Exception as e:
-            logger.warning(f"Using in-memory ChromaDB due to error: {e}")
-            # Fallback to in-memory client
-            self.chroma_client = chromadb.Client()
-            self.context_collection = self.chroma_client.create_collection(
-                name=f"context_{startup_id}",
-                metadata={"description": "Agent context memory"}
-            )
-            self.learning_collection = self.chroma_client.create_collection(
-                name=f"learning_{startup_id}",
-                metadata={"description": "Learning outcomes"}
-            )
-            self.decision_collection = self.chroma_client.create_collection(
-                name=f"decisions_{startup_id}",
-                metadata={"description": "Decision patterns"}
-            )
-        
-        logger.info(f"Vector memory manager initialized for startup {startup_id}")
+            logger.error(f"Error generating embedding: {e}")
+            # Return random embedding as fallback
+            return np.random.rand(1000).tolist()
     
-    async def store_context(self, agent_id: str, context: Dict[str, Any], importance: float = 0.5):
-        """Store agent context in vector memory."""
+    async def add_memory(self, memory: Memory) -> bool:
+        """Add a new memory to vector storage"""
         try:
-            # Convert context to text for embedding
-            context_text = json.dumps(context, sort_keys=True)
+            # Generate embedding for the memory
+            text_for_embedding = f"{memory.action} {memory.context} {memory.outcome}"
+            embedding = self._get_text_embedding(text_for_embedding)
             
-            # Store in vector database
-            self.context_collection.add(
-                documents=[context_text],
+            # Add to ChromaDB
+            self.collection.add(
+                embeddings=[embedding],
+                documents=[f"{memory.action}: {memory.context}"],
                 metadatas=[{
-                    'agent_id': agent_id,
-                    'importance': importance,
-                    'timestamp': datetime.utcnow().isoformat(),
-                    'type': 'context'
+                    "agent_type": memory.agent_type.value,
+                    "outcome": memory.outcome,
+                    "success_score": memory.success_score,
+                    "importance_score": memory.importance_score,
+                    "timestamp": memory.timestamp.isoformat(),
+                    "id": memory.id
                 }],
-                ids=[f"context_{agent_id}_{generate_id()}"]
+                ids=[memory.id]
             )
             
-            logger.info(f"Context stored for agent {agent_id}")
+            logger.info(f"Memory added: {memory.id} for agent {memory.agent_type.value}")
+            return True
             
         except Exception as e:
-            logger.error(f"Failed to store context: {e}")
+            logger.error(f"Error adding memory: {e}")
+            return False
     
-    async def retrieve_similar_context(self, agent_id: str, query: str, limit: int = 5):
-        """Retrieve similar context from memory."""
+    async def search_similar_memories(self, query: str, agent_type: Optional[AgentType] = None, 
+                                    limit: int = 10) -> List[Dict]:
+        """Search for similar memories using vector similarity"""
         try:
-            results = self.context_collection.query(
-                query_texts=[query],
+            # Generate embedding for query
+            query_embedding = self._get_text_embedding(query)
+            
+            # Search in ChromaDB
+            results = self.collection.query(
+                query_embeddings=[query_embedding],
                 n_results=limit,
-                where={"agent_id": agent_id}
+                where={"agent_type": agent_type.value} if agent_type else None
             )
             
-            return results['documents'][0] if results['documents'] else []
+            # Format results
+            memories = []
+            for i in range(len(results['ids'][0])):
+                memory = {
+                    "id": results['ids'][0][i],
+                    "document": results['documents'][0][i],
+                    "metadata": results['metadatas'][0][i],
+                    "distance": results['distances'][0][i] if 'distances' in results else 0.0
+                }
+                memories.append(memory)
+            
+            logger.info(f"Found {len(memories)} similar memories for query: {query}")
+            return memories
             
         except Exception as e:
-            logger.error(f"Failed to retrieve context: {e}")
+            logger.error(f"Error searching memories: {e}")
             return []
     
-    async def store_learning_outcome(self, outcome: LearningOutcome):
-        """Store learning outcome in vector memory."""
+    async def get_successful_patterns(self, agent_type: AgentType, min_success_score: float = 0.7) -> List[Dict]:
+        """Get successful patterns for an agent type"""
         try:
-            outcome_text = json.dumps({
-                'action_type': outcome.action_type,
-                'success': outcome.success,
-                'performance_metric': outcome.performance_metric,
-                'learning_type': outcome.learning_type.value,
-                'context': outcome.context
-            }, sort_keys=True)
-            
-            self.learning_collection.add(
-                documents=[outcome_text],
-                metadatas=[{
-                    'agent_id': outcome.agent_id,
-                    'timestamp': outcome.timestamp.isoformat(),
-                    'type': 'learning'
-                }],
-                ids=[f"learning_{outcome.agent_id}_{generate_id()}"]
-            )
-            
-            logger.info(f"Learning outcome stored for agent {outcome.agent_id}")
-            
-        except Exception as e:
-            logger.error(f"Failed to store learning outcome: {e}")
-
-
-class SelfTuningAgent:
-    """Self-tuning agent with learning capabilities."""
-    
-    def __init__(self, agent_id: str, agent_type: str, startup_id: str):
-        self.agent_id = agent_id
-        self.agent_type = agent_type
-        self.startup_id = startup_id
-        
-        # Initialize memory manager
-        self.memory_manager = VectorMemoryManager(startup_id)
-        
-        # Learning parameters
-        self.learning_rate = 0.1
-        self.exploration_rate = 0.2
-        self.confidence_threshold = 0.7
-        
-        # Performance tracking
-        self.performance_history = []
-        self.decision_history = []
-        self.learning_outcomes = []
-        
-        # Message bus for coordination
-        self.message_bus = get_message_bus(startup_id)
-        
-        logger.info(f"Self-tuning agent initialized: {agent_id}")
-    
-    async def make_decision(self, context: Dict[str, Any], options: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Make a decision with learning capabilities."""
-        try:
-            # Retrieve similar past decisions
-            similar_contexts = await self.memory_manager.retrieve_similar_context(
-                self.agent_id, json.dumps(context)
-            )
-            
-            # Calculate decision confidence
-            confidence = self._calculate_confidence(context, similar_contexts)
-            
-            # Choose action based on confidence and exploration
-            if confidence < self.confidence_threshold or np.random.random() < self.exploration_rate:
-                # Explore new options
-                decision = self._explore_decision(options)
-                decision_type = "exploration"
-            else:
-                # Exploit learned patterns
-                decision = self._exploit_decision(context, similar_contexts, options)
-                decision_type = "exploitation"
-            
-            # Store decision context
-            await self.memory_manager.store_context(self.agent_id, context)
-            
-            # Record decision
-            decision_record = {
-                'decision_id': generate_id(),
-                'context': context,
-                'decision': decision,
-                'confidence': confidence,
-                'decision_type': decision_type,
-                'timestamp': datetime.utcnow()
-            }
-            
-            self.decision_history.append(decision_record)
-            
-            return {
-                'decision': decision,
-                'confidence': confidence,
-                'decision_type': decision_type,
-                'context_used': len(similar_contexts)
-            }
-            
-        except Exception as e:
-            logger.error(f"Decision making failed: {e}")
-            return {'decision': options[0], 'confidence': 0.0, 'decision_type': 'fallback'}
-    
-    def _calculate_confidence(self, context: Dict[str, Any], similar_contexts: List[str]) -> float:
-        """Calculate confidence in decision based on similar contexts."""
-        if not similar_contexts:
-            return 0.0
-        
-        # Simple confidence calculation based on context similarity
-        # In production, use more sophisticated similarity metrics
-        return min(0.8, len(similar_contexts) * 0.1)
-    
-    def _explore_decision(self, options: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Explore new decision options."""
-        return np.random.choice(options)
-    
-    def _exploit_decision(self, context: Dict[str, Any], similar_contexts: List[str], options: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Exploit learned patterns for decision making."""
-        # Simple exploitation - choose first option for now
-        # In production, use more sophisticated pattern matching
-        return options[0]
-    
-    async def learn_from_outcome(self, decision_id: str, outcome: Dict[str, Any]):
-        """Learn from decision outcome."""
-        try:
-            # Find the decision record
-            decision_record = next(
-                (d for d in self.decision_history if d.get('decision_id') == decision_id),
-                None
-            )
-            
-            if not decision_record:
-                return
-            
-            # Create learning outcome
-            learning_outcome = LearningOutcome(
-                agent_id=self.agent_id,
-                action_type=decision_record['decision_type'],
-                success=outcome.get('success', False),
-                performance_metric=outcome.get('performance_metric', 0.0),
-                learning_type=LearningType.REINFORCEMENT,
-                timestamp=datetime.utcnow(),
-                context={
-                    'original_context': decision_record['context'],
-                    'outcome': outcome
+            # Query for successful memories
+            results = self.collection.query(
+                query_texts=["successful business creation"],
+                n_results=50,
+                where={
+                    "agent_type": agent_type.value,
+                    "success_score": {"$gte": min_success_score}
                 }
             )
             
-            # Store learning outcome
-            await self.memory_manager.store_learning_outcome(learning_outcome)
+            patterns = []
+            for i in range(len(results['ids'][0])):
+                pattern = {
+                    "action": results['metadatas'][0][i].get('action', ''),
+                    "context": results['documents'][0][i],
+                    "success_score": results['metadatas'][0][i].get('success_score', 0.0),
+                    "timestamp": results['metadatas'][0][i].get('timestamp', '')
+                }
+                patterns.append(pattern)
             
-            # Update performance history
-            self.performance_history.append({
-                'timestamp': datetime.utcnow(),
-                'performance': outcome.get('performance_metric', 0.0),
-                'success': outcome.get('success', False)
-            })
-            
-            # Adjust learning parameters based on performance
-            self._adjust_learning_parameters(outcome)
-            
-            logger.info(f"Learning outcome recorded for agent {self.agent_id}")
+            logger.info(f"Found {len(patterns)} successful patterns for {agent_type.value}")
+            return patterns
             
         except Exception as e:
-            logger.error(f"Failed to learn from outcome: {e}")
-    
-    def _adjust_learning_parameters(self, outcome: Dict[str, Any]):
-        """Adjust learning parameters based on performance."""
-        if outcome.get('success', False):
-            # Increase exploitation, decrease exploration
-            self.exploration_rate = max(0.05, self.exploration_rate * 0.95)
-            self.confidence_threshold = min(0.9, self.confidence_threshold * 1.05)
-        else:
-            # Increase exploration, decrease confidence threshold
-            self.exploration_rate = min(0.5, self.exploration_rate * 1.1)
-            self.confidence_threshold = max(0.5, self.confidence_threshold * 0.95)
+            logger.error(f"Error getting successful patterns: {e}")
+            return []
 
+class SelfTuningAgent:
+    """Self-tuning agent with reinforcement learning capabilities"""
+    
+    def __init__(self, agent_id: str, agent_type: AgentType, collection_name: str = "autopilot_ventures"):
+        self.agent_id = agent_id
+        self.agent_type = agent_type
+        self.collection_name = collection_name
+        
+        # Q-learning parameters
+        self.learning_rate = 0.1
+        self.discount_factor = 0.95
+        self.epsilon = 0.3  # Exploration rate
+        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.01
+        
+        # Q-table (stored in Redis)
+        self.redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        self.q_table_key = f"q_table:{agent_id}"
+        
+        # Confidence tracking
+        self.confidence_threshold = 0.7
+        self.confidence_history = []
+        
+        # Performance metrics
+        self.success_count = 0
+        self.total_actions = 0
+        self.recent_rewards = []
+        
+        logger.info(f"SelfTuningAgent initialized: {agent_id} ({agent_type.value})")
+    
+    def _get_q_value(self, state: str, action: str) -> float:
+        """Get Q-value from Redis"""
+        try:
+            q_key = f"{self.q_table_key}:{state}:{action}"
+            value = self.redis_client.get(q_key)
+            return float(value) if value else 0.0
+        except:
+            return 0.0
+    
+    def _set_q_value(self, state: str, action: str, value: float):
+        """Set Q-value in Redis"""
+        try:
+            q_key = f"{self.q_table_key}:{state}:{action}"
+            self.redis_client.set(q_key, value)
+        except Exception as e:
+            logger.error(f"Error setting Q-value: {e}")
+    
+    def _get_available_actions(self, state: str) -> List[str]:
+        """Get available actions for a state"""
+        # Define action space based on agent type
+        action_spaces = {
+            AgentType.NICHE_RESEARCHER: ["research_market", "analyze_competition", "identify_opportunity", "validate_niche"],
+            AgentType.MVP_DESIGNER: ["design_prototype", "create_wireframe", "define_features", "estimate_timeline"],
+            AgentType.MARKETING_STRATEGIST: ["create_campaign", "target_audience", "set_budget", "measure_roi"],
+            AgentType.CONTENT_CREATOR: ["write_copy", "create_visual", "optimize_seo", "schedule_content"],
+            AgentType.ANALYTICS_AGENT: ["track_metrics", "analyze_data", "generate_report", "optimize_performance"],
+            AgentType.OPERATIONS_AGENT: ["manage_processes", "optimize_workflow", "handle_issues", "scale_operations"],
+            AgentType.FUNDING_AGENT: ["identify_investors", "prepare_pitch", "negotiate_terms", "close_deal"],
+            AgentType.LEGAL_AGENT: ["review_contracts", "ensure_compliance", "protect_ip", "handle_disputes"],
+            AgentType.HR_AGENT: ["recruit_talent", "manage_team", "develop_culture", "retain_employees"],
+            AgentType.SUPPORT_AGENT: ["handle_inquiries", "resolve_issues", "provide_guidance", "escalate_problems"],
+            AgentType.MASTER_AGENT: ["coordinate_agents", "make_decisions", "optimize_strategy", "manage_resources"]
+        }
+        
+        return action_spaces.get(self.agent_type, ["default_action"])
+    
+    def choose_action(self, state: str) -> Tuple[str, float]:
+        """Choose action using epsilon-greedy policy"""
+        available_actions = self._get_available_actions(state)
+        
+        # Epsilon-greedy exploration
+        if np.random.random() < self.epsilon:
+            action = np.random.choice(available_actions)
+            confidence = 0.5  # Low confidence for exploration
+        else:
+            # Choose best action based on Q-values
+            q_values = [self._get_q_value(state, action) for action in available_actions]
+            best_action_idx = np.argmax(q_values)
+            action = available_actions[best_action_idx]
+            confidence = min(0.9, max(0.1, q_values[best_action_idx] / 10))  # Normalize confidence
+        
+        self.confidence_history.append(confidence)
+        return action, confidence
+    
+    def update_q_value(self, state: str, action: str, reward: float, next_state: str):
+        """Update Q-value using Q-learning algorithm"""
+        try:
+            current_q = self._get_q_value(state, action)
+            
+            # Get max Q-value for next state
+            next_actions = self._get_available_actions(next_state)
+            next_q_values = [self._get_q_value(next_state, next_action) for next_action in next_actions]
+            max_next_q = max(next_q_values) if next_q_values else 0
+            
+            # Q-learning update
+            new_q = current_q + self.learning_rate * (reward + self.discount_factor * max_next_q - current_q)
+            
+            # Update Q-table
+            self._set_q_value(state, action, new_q)
+            
+            # Update metrics
+            self.total_actions += 1
+            self.recent_rewards.append(reward)
+            
+            # Decay epsilon
+            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+            
+            logger.debug(f"Q-value updated: {state} -> {action} = {new_q:.4f}")
+            
+        except Exception as e:
+            logger.error(f"Error updating Q-value: {e}")
+    
+    def get_performance_metrics(self) -> Dict:
+        """Get agent performance metrics"""
+        avg_reward = np.mean(self.recent_rewards[-100:]) if self.recent_rewards else 0
+        avg_confidence = np.mean(self.confidence_history[-100:]) if self.confidence_history else 0
+        success_rate = self.success_count / max(1, self.total_actions)
+        
+        return {
+            "agent_id": self.agent_id,
+            "agent_type": self.agent_type.value,
+            "total_actions": self.total_actions,
+            "success_count": self.success_count,
+            "success_rate": success_rate,
+            "avg_reward": avg_reward,
+            "avg_confidence": avg_confidence,
+            "epsilon": self.epsilon,
+            "recent_performance": self.recent_rewards[-10:] if self.recent_rewards else []
+        }
 
 class ReinforcementLearningEngine:
-    """Reinforcement learning engine for agent optimization."""
+    """Central reinforcement learning engine for all agents"""
     
-    def __init__(self, startup_id: str):
-        self.startup_id = startup_id
-        self.engine_id = generate_id("rl_engine")
+    def __init__(self, collection_name: str = "autopilot_ventures"):
+        self.collection_name = collection_name
+        self.redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        self.vector_memory = VectorMemoryManager(collection_name)
         
-        # Learning agents
-        self.learning_agents: Dict[str, SelfTuningAgent] = {}
+        # Learning outcomes storage
+        self.outcomes_key = f"learning_outcomes:{collection_name}"
+        
+        # Pattern analysis
+        self.pattern_clusters = {}
+        self.trend_analysis = {}
         
         # Performance tracking
-        self.global_performance = defaultdict(list)
-        self.optimization_history = []
-        
-        # Message bus
-        self.message_bus = get_message_bus(startup_id)
-        
-        logger.info(f"Reinforcement learning engine initialized for startup {startup_id}")
-    
-    async def register_agent(self, agent_id: str, agent_type: str):
-        """Register an agent for learning."""
-        if agent_id not in self.learning_agents:
-            self.learning_agents[agent_id] = SelfTuningAgent(agent_id, agent_type, self.startup_id)
-            logger.info(f"Agent {agent_id} registered for learning")
-    
-    async def optimize_agent_behavior(self, agent_id: str, performance_data: Dict[str, Any]):
-        """Optimize agent behavior based on performance data."""
-        try:
-            if agent_id not in self.learning_agents:
-                return
-            
-            agent = self.learning_agents[agent_id]
-            
-            # Analyze performance trends
-            performance_trend = self._analyze_performance_trend(agent_id, performance_data)
-            
-            # Generate optimization recommendations
-            optimizations = self._generate_optimizations(agent, performance_trend)
-            
-            # Apply optimizations
-            await self._apply_optimizations(agent, optimizations)
-            
-            # Record optimization
-            self.optimization_history.append({
-                'agent_id': agent_id,
-                'timestamp': datetime.utcnow(),
-                'performance_trend': performance_trend,
-                'optimizations': optimizations
-            })
-            
-            # Notify other agents about optimization
-            await self.message_bus.broadcast_message(
-                sender="rl_engine",
-                message_type=MessageType.DATA_SHARE,
-                content={
-                    'data_key': f'optimization_{agent_id}',
-                    'data_value': {
-                        'agent_id': agent_id,
-                        'optimizations': optimizations,
-                        'performance_trend': performance_trend
-                    }
-                },
-                priority=MessagePriority.NORMAL
-            )
-            
-            logger.info(f"Agent {agent_id} behavior optimized")
-            
-        except Exception as e:
-            logger.error(f"Failed to optimize agent {agent_id}: {e}")
-    
-    def _analyze_performance_trend(self, agent_id: str, performance_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze performance trends for an agent."""
-        # Simple trend analysis
-        # In production, use more sophisticated time series analysis
-        return {
-            'trend': 'improving' if performance_data.get('success_rate', 0) > 0.7 else 'declining',
-            'confidence': 0.8,
-            'recommendations': ['increase_exploration', 'adjust_thresholds']
-        }
-    
-    def _generate_optimizations(self, agent: SelfTuningAgent, performance_trend: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Generate optimization recommendations."""
-        optimizations = []
-        
-        if performance_trend['trend'] == 'declining':
-            optimizations.append({
-                'type': 'increase_exploration',
-                'parameter': 'exploration_rate',
-                'value': min(0.5, agent.exploration_rate * 1.2)
-            })
-        
-        optimizations.append({
-            'type': 'adjust_confidence',
-            'parameter': 'confidence_threshold',
-            'value': 0.7
-        })
-        
-        return optimizations
-    
-    async def _apply_optimizations(self, agent: SelfTuningAgent, optimizations: List[Dict[str, Any]]):
-        """Apply optimizations to agent."""
-        for optimization in optimizations:
-            if optimization['type'] == 'increase_exploration':
-                agent.exploration_rate = optimization['value']
-            elif optimization['type'] == 'adjust_confidence':
-                agent.confidence_threshold = optimization['value']
-
-
-class AutonomousWorkflowEngine:
-    """Autonomous workflow engine with self-healing capabilities."""
-    
-    def __init__(self, startup_id: str):
-        self.startup_id = startup_id
-        self.engine_id = generate_id("autonomous_workflow")
-        
-        # Workflow state management
-        self.active_workflows = {}
-        self.workflow_history = []
-        self.failure_patterns = defaultdict(int)
-        
-        # Self-healing capabilities
-        self.healing_strategies = {
-            'agent_failure': self._handle_agent_failure,
-            'timeout': self._handle_timeout,
-            'resource_exhaustion': self._handle_resource_exhaustion,
-            'dependency_failure': self._handle_dependency_failure
+        self.global_metrics = {
+            "total_episodes": 0,
+            "total_rewards": 0,
+            "success_rate": 0.0,
+            "learning_rate": 0.0,
+            "adaptation_score": 0.0
         }
         
-        # Message bus
-        self.message_bus = get_message_bus(startup_id)
-        
-        logger.info(f"Autonomous workflow engine initialized for startup {startup_id}")
+        logger.info(f"ReinforcementLearningEngine initialized for: {collection_name}")
     
-    async def execute_autonomous_workflow(self, workflow_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute workflow with autonomous capabilities."""
-        workflow_id = generate_id("autonomous_workflow")
-        
+    async def register_learning_outcome(self, outcome: LearningOutcome) -> bool:
+        """Register a learning outcome from an agent"""
         try:
-            # Initialize workflow state
-            self.active_workflows[workflow_id] = {
-                'config': workflow_config,
-                'status': 'running',
-                'start_time': datetime.utcnow(),
-                'steps_completed': [],
-                'steps_failed': [],
-                'healing_actions': []
+            # Store in Redis
+            outcome_data = {
+                "agent_id": outcome.agent_id,
+                "action": outcome.action,
+                "state": outcome.state,
+                "reward": outcome.reward,
+                "next_state": outcome.next_state,
+                "success": outcome.success,
+                "confidence": outcome.confidence,
+                "timestamp": outcome.timestamp.isoformat()
             }
             
-            # Execute workflow steps with monitoring
-            result = await self._execute_with_monitoring(workflow_id, workflow_config)
+            outcome_id = str(uuid.uuid4())
+            self.redis_client.hset(self.outcomes_key, outcome_id, json.dumps(outcome_data))
             
-            # Record workflow completion
-            self.workflow_history.append({
-                'workflow_id': workflow_id,
-                'config': workflow_config,
-                'result': result,
-                'duration': (datetime.utcnow() - self.active_workflows[workflow_id]['start_time']).total_seconds()
-            })
+            # Update global metrics
+            self.global_metrics["total_episodes"] += 1
+            self.global_metrics["total_rewards"] += outcome.reward
             
-            # Clean up
-            del self.active_workflows[workflow_id]
+            if outcome.success:
+                self.global_metrics["success_rate"] = (
+                    (self.global_metrics["success_rate"] * (self.global_metrics["total_episodes"] - 1) + 1) / 
+                    self.global_metrics["total_episodes"]
+                )
             
-            return result
+            logger.info(f"Learning outcome registered: {outcome_id}")
+            return True
             
         except Exception as e:
-            logger.error(f"Autonomous workflow failed: {e}")
-            return {'success': False, 'error': str(e)}
+            logger.error(f"Error registering learning outcome: {e}")
+            return False
     
-    async def _execute_with_monitoring(self, workflow_id: str, workflow_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute workflow with continuous monitoring and self-healing."""
-        workflow_state = self.active_workflows[workflow_id]
-        
+    async def analyze_patterns(self) -> Dict:
+        """Analyze learning patterns across all agents"""
         try:
-            # Execute workflow steps
-            for step_name, step_config in workflow_config.items():
-                try:
-                    # Execute step
-                    step_result = await self._execute_step(step_name, step_config)
-                    
-                    if step_result['success']:
-                        workflow_state['steps_completed'].append(step_name)
-                    else:
-                        workflow_state['steps_failed'].append(step_name)
-                        
-                        # Attempt self-healing
-                        healing_result = await self._attempt_healing(workflow_id, step_name, step_result)
-                        workflow_state['healing_actions'].append(healing_result)
-                        
-                        if not healing_result['success']:
-                            # Escalate to human if healing fails
-                            await self._escalate_to_human(workflow_id, step_name, step_result)
-                            break
-                
-                except Exception as e:
-                    logger.error(f"Step {step_name} failed: {e}")
-                    workflow_state['steps_failed'].append(step_name)
-                    
-                    # Record failure pattern
-                    self.failure_patterns[step_name] += 1
+            # Get all learning outcomes
+            outcomes_data = self.redis_client.hgetall(self.outcomes_key)
+            outcomes = []
             
-            # Determine overall success
-            success = len(workflow_state['steps_failed']) == 0
+            for outcome_id, outcome_json in outcomes_data.items():
+                outcome = json.loads(outcome_json)
+                outcomes.append(outcome)
+            
+            if not outcomes:
+                return {"patterns": [], "trends": {}}
+            
+            # Convert to DataFrame for analysis
+            df = pd.DataFrame(outcomes)
+            
+            # Pattern clustering
+            if len(df) > 10:
+                # Cluster by reward values
+                kmeans = KMeans(n_clusters=min(5, len(df)), random_state=42)
+                df['reward_cluster'] = kmeans.fit_predict(df[['reward']].values)
+                
+                # Analyze patterns by cluster
+                patterns = []
+                for cluster_id in df['reward_cluster'].unique():
+                    cluster_data = df[df['reward_cluster'] == cluster_id]
+                    pattern = {
+                        "cluster_id": int(cluster_id),
+                        "avg_reward": cluster_data['reward'].mean(),
+                        "success_rate": cluster_data['success'].mean(),
+                        "common_actions": cluster_data['action'].value_counts().head(3).to_dict(),
+                        "sample_size": len(cluster_data)
+                    }
+                    patterns.append(pattern)
+            else:
+                patterns = []
+            
+            # Trend analysis
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.sort_values('timestamp')
+            
+            # Calculate moving averages
+            if len(df) > 10:
+                df['reward_ma'] = df['reward'].rolling(window=10).mean()
+                df['success_ma'] = df['success'].rolling(window=10).mean()
+                
+                trends = {
+                    "reward_trend": df['reward_ma'].iloc[-1] - df['reward_ma'].iloc[0],
+                    "success_trend": df['success_ma'].iloc[-1] - df['success_ma'].iloc[0],
+                    "recent_performance": df['reward'].tail(10).mean(),
+                    "improvement_rate": (df['reward'].tail(10).mean() - df['reward'].head(10).mean()) / max(1, df['reward'].head(10).mean())
+                }
+            else:
+                trends = {
+                    "reward_trend": 0,
+                    "success_trend": 0,
+                    "recent_performance": df['reward'].mean() if len(df) > 0 else 0,
+                    "improvement_rate": 0
+                }
+            
+            # Update global metrics
+            self.global_metrics["learning_rate"] = trends.get("improvement_rate", 0)
+            self.global_metrics["adaptation_score"] = trends.get("success_trend", 0)
             
             return {
-                'success': success,
-                'steps_completed': workflow_state['steps_completed'],
-                'steps_failed': workflow_state['steps_failed'],
-                'healing_actions': workflow_state['healing_actions']
+                "patterns": patterns,
+                "trends": trends,
+                "total_outcomes": len(outcomes)
             }
             
         except Exception as e:
-            logger.error(f"Workflow execution failed: {e}")
-            return {'success': False, 'error': str(e)}
+            logger.error(f"Error analyzing patterns: {e}")
+            return {"patterns": [], "trends": {}}
     
-    async def _execute_step(self, step_name: str, step_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a single workflow step."""
-        # Simulate step execution
-        # In production, this would execute actual agent tasks
-        await asyncio.sleep(1)
-        
-        # Simulate occasional failures
-        if np.random.random() < 0.1:  # 10% failure rate
-            return {'success': False, 'error': 'Simulated failure'}
-        
-        return {'success': True, 'result': f'Step {step_name} completed'}
-    
-    async def _attempt_healing(self, workflow_id: str, step_name: str, step_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Attempt to heal a failed step."""
+    async def optimize_agent_strategies(self) -> Dict:
+        """Optimize strategies based on learning outcomes"""
         try:
-            # Determine failure type
-            failure_type = self._classify_failure(step_result)
+            # Get successful patterns
+            successful_outcomes = []
+            outcomes_data = self.redis_client.hgetall(self.outcomes_key)
             
-            # Get healing strategy
-            healing_strategy = self.healing_strategies.get(failure_type)
+            for outcome_id, outcome_json in outcomes_data.items():
+                outcome = json.loads(outcome_json)
+                if outcome.get('success', False) and outcome.get('reward', 0) > 5:
+                    successful_outcomes.append(outcome)
             
-            if healing_strategy:
-                healing_result = await healing_strategy(workflow_id, step_name, step_result)
-                return healing_result
-            else:
-                return {'success': False, 'error': 'No healing strategy available'}
+            if not successful_outcomes:
+                return {"optimizations": [], "recommendations": []}
+            
+            # Analyze successful patterns
+            df = pd.DataFrame(successful_outcomes)
+            
+            # Find most successful actions
+            action_success = df.groupby('action').agg({
+                'reward': 'mean',
+                'success': 'mean',
+                'confidence': 'mean'
+            }).sort_values('reward', ascending=False)
+            
+            # Generate optimizations
+            optimizations = []
+            for action, metrics in action_success.head(5).iterrows():
+                optimization = {
+                    "action": action,
+                    "avg_reward": metrics['reward'],
+                    "success_rate": metrics['success'],
+                    "avg_confidence": metrics['confidence'],
+                    "recommendation": f"Increase frequency of '{action}' action"
+                }
+                optimizations.append(optimization)
+            
+            # Generate recommendations
+            recommendations = []
+            if len(df) > 0:
+                avg_confidence = df['confidence'].mean()
+                if avg_confidence < 0.7:
+                    recommendations.append("Increase confidence threshold for better decision quality")
                 
+                avg_reward = df['reward'].mean()
+                if avg_reward < 5:
+                    recommendations.append("Focus on high-reward actions and strategies")
+                
+                success_rate = df['success'].mean()
+                if success_rate < 0.75:
+                    recommendations.append("Improve success rate through better state understanding")
+            
+            return {
+                "optimizations": optimizations,
+                "recommendations": recommendations,
+                "successful_patterns_count": len(successful_outcomes)
+            }
+            
         except Exception as e:
-            logger.error(f"Healing attempt failed: {e}")
-            return {'success': False, 'error': str(e)}
+            logger.error(f"Error optimizing strategies: {e}")
+            return {"optimizations": [], "recommendations": []}
     
-    def _classify_failure(self, step_result: Dict[str, Any]) -> str:
-        """Classify the type of failure."""
-        error = step_result.get('error', '').lower()
-        
-        if 'timeout' in error:
-            return 'timeout'
-        elif 'resource' in error:
-            return 'resource_exhaustion'
-        elif 'dependency' in error:
-            return 'dependency_failure'
-        else:
-            return 'agent_failure'
+    def get_global_metrics(self) -> Dict:
+        """Get global learning metrics"""
+        return self.global_metrics.copy()
+
+# Singleton instance
+_reinforcement_learning_engine = None
+
+def get_reinforcement_learning_engine(collection_name: str = "autopilot_ventures") -> ReinforcementLearningEngine:
+    """Get singleton instance of reinforcement learning engine"""
+    global _reinforcement_learning_engine
+    if _reinforcement_learning_engine is None:
+        _reinforcement_learning_engine = ReinforcementLearningEngine(collection_name)
+    return _reinforcement_learning_engine
+
+class AutonomousConfig:
+    """Configuration for autonomous system"""
     
-    async def _handle_agent_failure(self, workflow_id: str, step_name: str, step_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle agent failure."""
-        # Retry with different parameters
-        return {'success': True, 'action': 'retry_with_different_parameters'}
-    
-    async def _handle_timeout(self, workflow_id: str, step_name: str, step_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle timeout failure."""
-        # Increase timeout and retry
-        return {'success': True, 'action': 'increase_timeout_and_retry'}
-    
-    async def _handle_resource_exhaustion(self, workflow_id: str, step_name: str, step_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle resource exhaustion."""
-        # Scale resources and retry
-        return {'success': True, 'action': 'scale_resources_and_retry'}
-    
-    async def _handle_dependency_failure(self, workflow_id: str, step_name: str, step_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle dependency failure."""
-        # Find alternative dependencies
-        return {'success': True, 'action': 'find_alternative_dependencies'}
-    
-    async def _escalate_to_human(self, workflow_id: str, step_name: str, step_result: Dict[str, Any]):
-        """Escalate to human intervention."""
-        await self.message_bus.broadcast_message(
-            sender="autonomous_workflow",
-            message_type=MessageType.CONFLICT_ALERT,
-            content={
-                'workflow_id': workflow_id,
-                'step_name': step_name,
-                'error': step_result.get('error', 'Unknown error'),
-                'escalation_reason': 'Self-healing failed'
-            },
-            priority=MessagePriority.CRITICAL
-        )
+    def __init__(self):
+        self.vector_memory_enabled = True
+        self.self_tuning_enabled = True
+        self.reinforcement_learning_enabled = True
+        self.server_port = 8000
+        self.server_host = '0.0.0.0'
+        self.autonomous_mode = True
+        self.runtime_duration_days = 14
+        self.success_rate_target = 0.85
+        self.learning_improvement_target = 3.0
+        self.uptime_target = 0.999
+        self.intervention_reduction_target = 0.90
+        self.startup_success_target = 0.75
+        self.revenue_projection_target = 50000
 
+# Initialize autonomous configuration
+autonomous_config = AutonomousConfig()
 
-# Global instances
-_rl_engine: Optional[ReinforcementLearningEngine] = None
-_autonomous_workflow: Optional[AutonomousWorkflowEngine] = None
+# Initialize core systems
+vector_memory = VectorMemoryManager()
+reinforcement_engine = get_reinforcement_learning_engine()
 
+# Create self-tuning agents
+self_tuning_agents = {}
+for agent_type in AgentType:
+    agent_id = f"{agent_type.value}_agent"
+    self_tuning_agents[agent_type] = SelfTuningAgent(agent_id, agent_type)
 
-def get_reinforcement_learning_engine(startup_id: str) -> ReinforcementLearningEngine:
-    """Get or create reinforcement learning engine instance."""
-    global _rl_engine
-    if _rl_engine is None or _rl_engine.startup_id != startup_id:
-        _rl_engine = ReinforcementLearningEngine(startup_id)
-    return _rl_engine
-
-
-def get_autonomous_workflow_engine(startup_id: str) -> AutonomousWorkflowEngine:
-    """Get or create autonomous workflow engine instance."""
-    global _autonomous_workflow
-    if _autonomous_workflow is None or _autonomous_workflow.startup_id != startup_id:
-        _autonomous_workflow = AutonomousWorkflowEngine(startup_id)
-    return _autonomous_workflow 
+logger.info("Phase 1 Autonomous Learning System initialized successfully") 

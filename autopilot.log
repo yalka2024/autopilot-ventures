@@ -1,0 +1,502 @@
+2025-07-22 16:34:09,221 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:09,233 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:09,239 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:10,152 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:10,222 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:10,223 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:10,223 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:10,223 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:10,223 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:10,224 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:10,224 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:10,225 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:10,225 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:10,225 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:10,225 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:10,226 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:10,226 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:10,226 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:10,244 - server - INFO - Autonomous server initialized
+2025-07-22 16:34:10,401 - server - INFO - Target Duration: 14 days
+2025-07-22 16:34:10,401 - server - INFO - Success Rate Target: 0.85
+2025-07-22 16:34:10,401 - server - INFO - Revenue Target: $50000
+2025-07-22 16:34:10,402 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:10,402 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:10,402 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:10,402 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:10,405 - apscheduler.scheduler - INFO - Added job "AutonomousServer.run_autonomous_cycle" to job store "default"
+2025-07-22 16:34:10,405 - apscheduler.scheduler - INFO - Added job "AutonomousServer.health_check" to job store "default"
+2025-07-22 16:34:10,405 - apscheduler.scheduler - INFO - Added job "AutonomousServer.persist_state" to job store "default"
+2025-07-22 16:34:10,405 - apscheduler.scheduler - INFO - Added job "AutonomousServer.analyze_learning" to job store "default"
+2025-07-22 16:34:10,406 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-22 16:34:11,503 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:11,696 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:11,804 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:11,805 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:11,805 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:11,806 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:11,806 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:11,806 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:11,806 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:11,807 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:11,808 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:11,808 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:11,808 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:11,808 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:11,809 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:11,809 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:20,789 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:20,921 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:21,017 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:21,017 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:21,018 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:21,018 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:21,018 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:21,018 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:21,019 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:21,019 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:21,019 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:21,020 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:21,020 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:21,020 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:21,021 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:21,021 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:21,027 - server - INFO - Autonomous server initialized
+2025-07-22 16:34:21,056 - server - INFO - Target Duration: 14 days
+2025-07-22 16:34:21,056 - server - INFO - Success Rate Target: 0.85
+2025-07-22 16:34:21,057 - server - INFO - Revenue Target: $50000
+2025-07-22 16:34:21,057 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,058 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,058 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,058 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,060 - apscheduler.scheduler - INFO - Added job "AutonomousServer.run_autonomous_cycle" to job store "default"
+2025-07-22 16:34:21,060 - apscheduler.scheduler - INFO - Added job "AutonomousServer.health_check" to job store "default"
+2025-07-22 16:34:21,060 - apscheduler.scheduler - INFO - Added job "AutonomousServer.persist_state" to job store "default"
+2025-07-22 16:34:21,061 - apscheduler.scheduler - INFO - Added job "AutonomousServer.analyze_learning" to job store "default"
+2025-07-22 16:34:21,061 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-22 16:34:21,444 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:21,489 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:21,605 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:21,647 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:21,673 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:21,673 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:21,674 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:21,674 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:21,674 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:21,674 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:21,675 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:21,675 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:21,675 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:21,675 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:21,676 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:21,676 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:21,676 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:21,676 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:21,681 - server - INFO - Autonomous server initialized
+2025-07-22 16:34:21,696 - server - INFO - Target Duration: 14 days
+2025-07-22 16:34:21,696 - server - INFO - Success Rate Target: 0.85
+2025-07-22 16:34:21,696 - server - INFO - Revenue Target: $50000
+2025-07-22 16:34:21,696 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,697 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,697 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,705 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,706 - apscheduler.scheduler - INFO - Added job "AutonomousServer.run_autonomous_cycle" to job store "default"
+2025-07-22 16:34:21,706 - apscheduler.scheduler - INFO - Added job "AutonomousServer.health_check" to job store "default"
+2025-07-22 16:34:21,707 - apscheduler.scheduler - INFO - Added job "AutonomousServer.persist_state" to job store "default"
+2025-07-22 16:34:21,707 - apscheduler.scheduler - INFO - Added job "AutonomousServer.analyze_learning" to job store "default"
+2025-07-22 16:34:21,707 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-22 16:34:21,742 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:21,743 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:21,744 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:21,744 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:21,744 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:21,745 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:21,745 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:21,745 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:21,746 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:21,746 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:21,746 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:21,746 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:21,746 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:21,746 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:21,751 - server - INFO - Autonomous server initialized
+2025-07-22 16:34:21,768 - server - INFO - Target Duration: 14 days
+2025-07-22 16:34:21,768 - server - INFO - Success Rate Target: 0.85
+2025-07-22 16:34:21,768 - server - INFO - Revenue Target: $50000
+2025-07-22 16:34:21,768 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,769 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,769 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,775 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-22 16:34:21,776 - apscheduler.scheduler - INFO - Added job "AutonomousServer.run_autonomous_cycle" to job store "default"
+2025-07-22 16:34:21,776 - apscheduler.scheduler - INFO - Added job "AutonomousServer.health_check" to job store "default"
+2025-07-22 16:34:21,776 - apscheduler.scheduler - INFO - Added job "AutonomousServer.persist_state" to job store "default"
+2025-07-22 16:34:21,777 - apscheduler.scheduler - INFO - Added job "AutonomousServer.analyze_learning" to job store "default"
+2025-07-22 16:34:21,777 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-22 16:34:23,031 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:23,186 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:23,254 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:23,254 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:23,255 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:23,255 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:23,255 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:23,255 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:23,255 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:23,255 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:23,256 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:23,256 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:23,256 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:23,256 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:23,256 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:23,257 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:23,422 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 16:34:54,395 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:34:54,515 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:54,587 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:34:54,588 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:34:54,588 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:34:54,588 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:34:54,589 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:34:54,589 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:34:54,589 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:34:54,589 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:34:54,590 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:34:54,590 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:34:54,590 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:34:54,591 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:34:54,591 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:34:54,591 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:34:54,752 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_collection
+2025-07-22 16:34:54,901 - autonomous_enhancements - INFO - Memory added: test_memory_001 for agent niche_researcher
+2025-07-22 16:34:54,969 - autonomous_enhancements - INFO - Found 1 similar memories for query: market research testing
+2025-07-22 16:34:54,970 - autonomous_enhancements - INFO - SelfTuningAgent initialized: test_agent (niche_researcher)
+2025-07-22 16:35:00,011 - apscheduler.executors.default - INFO - Running job "AutonomousServer.run_autonomous_cycle (trigger: cron[minute='*/5'], next run at: 2025-07-22 16:40:00 PDT)" (scheduled at 2025-07-22 16:35:00-07:00)
+2025-07-22 16:35:00,012 - apscheduler.executors.default - INFO - Running job "AutonomousServer.run_autonomous_cycle (trigger: cron[minute='*/5'], next run at: 2025-07-22 16:40:00 PDT)" (scheduled at 2025-07-22 16:35:00-07:00)
+2025-07-22 16:35:11,361 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_collection
+2025-07-22 16:35:11,361 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_collection
+2025-07-22 16:41:56,298 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:41:56,467 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:41:56,534 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:41:56,534 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:41:56,535 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:41:56,536 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:41:56,537 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:41:56,537 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:41:56,538 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:41:56,539 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:41:56,541 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:41:56,541 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:41:56,542 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:41:56,543 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:41:56,543 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:41:56,544 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:42:09,289 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:42:09,450 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:42:09,517 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:42:09,518 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:42:09,518 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:42:09,519 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:42:09,520 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:42:09,520 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:42:09,520 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:42:09,520 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:42:09,521 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:42:09,521 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:42:09,521 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:42:09,521 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:42:09,521 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:42:09,522 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:42:14,163 - database - INFO - Database initialized successfully
+2025-07-22 16:42:14,346 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:14,347 - autonomous_enhancements - INFO - SelfTuningAgent initialized: test_agent (niche_researcher)
+2025-07-22 16:42:14,410 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:14,411 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup_001
+2025-07-22 16:42:15,609 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:15,610 - autonomous_enhancements - INFO - SelfTuningAgent initialized: agent_niche_research_1753227734411_d4c20868 (niche_researcher)
+2025-07-22 16:42:15,772 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:15,772 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup_001
+2025-07-22 16:42:15,772 - agents_enhanced - INFO - Autonomous features initialized for agent agent_niche_research_1753227734411_d4c20868
+2025-07-22 16:42:15,794 - agents_enhanced - INFO - Enhanced agent agent_niche_research_1753227734411_d4c20868 initialized with autonomous features
+2025-07-22 16:42:15,896 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:15,998 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:15,998 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup_001
+2025-07-22 16:42:15,998 - performance_monitoring - INFO - Autonomous performance monitor initialized for startup test_startup_001
+2025-07-22 16:42:16,131 - autonomous_enhancements - INFO - Memory added: test_memory_001 for agent niche_researcher
+2025-07-22 16:42:16,227 - autonomous_enhancements - INFO - Found 1 similar memories for query: test
+2025-07-22 16:42:49,096 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:42:49,244 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:42:49,349 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:42:49,349 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:42:49,349 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:42:49,350 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:42:49,350 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:42:49,350 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:42:49,350 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:42:49,351 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:42:49,351 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:42:49,351 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:42:49,351 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:42:49,351 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:42:49,351 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:42:49,352 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:42:53,870 - database - INFO - Database initialized successfully
+2025-07-22 16:42:53,944 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:53,945 - autonomous_enhancements - INFO - SelfTuningAgent initialized: test_agent (niche_researcher)
+2025-07-22 16:42:54,008 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:54,009 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup_001
+2025-07-22 16:42:55,033 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:55,034 - autonomous_enhancements - INFO - SelfTuningAgent initialized: agent_niche_research_1753227774009_46de2124 (niche_researcher)
+2025-07-22 16:42:55,135 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:55,136 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup_001
+2025-07-22 16:42:55,136 - agents_enhanced - INFO - Autonomous features initialized for agent agent_niche_research_1753227774009_46de2124
+2025-07-22 16:42:55,159 - agents_enhanced - INFO - Enhanced agent agent_niche_research_1753227774009_46de2124 initialized with autonomous features
+2025-07-22 16:42:55,260 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:55,325 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup_001
+2025-07-22 16:42:55,326 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup_001
+2025-07-22 16:42:55,326 - performance_monitoring - INFO - Autonomous performance monitor initialized for startup test_startup_001
+2025-07-22 16:42:55,517 - autonomous_enhancements - INFO - Memory added: test_memory_001 for agent niche_researcher
+2025-07-22 16:42:55,585 - autonomous_enhancements - INFO - Found 1 similar memories for query: test
+2025-07-22 16:43:16,047 - autonomous_enhancements - ERROR - Error registering learning outcome: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+2025-07-22 16:49:31,898 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:49:32,056 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:49:32,156 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:49:32,157 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:49:32,157 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:49:32,157 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:49:32,158 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:49:32,158 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:49:32,158 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:49:32,159 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:49:32,159 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:49:32,159 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:49:32,159 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:49:32,159 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:49:32,159 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:49:32,160 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:49:32,291 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test
+2025-07-22 16:50:31,107 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:50:31,261 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:50:31,380 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:50:31,381 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:50:31,383 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:50:31,384 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:50:31,385 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:50:31,386 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:50:31,387 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:50:31,388 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:50:31,389 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:50:31,389 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:50:31,390 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:50:31,391 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:50:31,392 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:50:31,392 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:51:08,659 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 16:51:08,788 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:51:08,890 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 16:51:08,891 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 16:51:08,892 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 16:51:08,893 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 16:51:08,893 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 16:51:08,893 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 16:51:08,894 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 16:51:08,894 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 16:51:08,895 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 16:51:08,895 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 16:51:08,895 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 16:51:08,896 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 16:51:08,896 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 16:51:08,896 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 16:51:09,011 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_collection
+2025-07-22 16:51:14,083 - database - INFO - Database initialized successfully
+2025-07-22 16:51:15,178 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 16:51:15,178 - autonomous_enhancements - INFO - SelfTuningAgent initialized: agent_niche_research_1753228274085_4c94cd8d (niche_researcher)
+2025-07-22 16:51:15,275 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 16:51:15,276 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup
+2025-07-22 16:51:15,276 - agents_enhanced - INFO - Autonomous features initialized for agent agent_niche_research_1753228274085_4c94cd8d
+2025-07-22 16:51:15,298 - agents_enhanced - INFO - Enhanced agent agent_niche_research_1753228274085_4c94cd8d initialized with autonomous features
+2025-07-22 18:01:42,375 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 18:01:42,990 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 18:01:43,042 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 18:01:43,043 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 18:01:43,044 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 18:01:43,045 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 18:01:43,048 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 18:01:43,048 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 18:01:43,049 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 18:01:43,049 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 18:01:43,050 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 18:01:43,050 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 18:01:43,051 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 18:01:43,051 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 18:01:43,052 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 18:01:43,052 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 18:01:43,141 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_collection
+2025-07-22 18:02:20,502 - database - INFO - Database initialized successfully
+2025-07-22 18:02:21,644 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:21,645 - autonomous_enhancements - INFO - SelfTuningAgent initialized: agent_niche_research_1753232540504_157f3921 (niche_researcher)
+2025-07-22 18:02:21,743 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:21,744 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup
+2025-07-22 18:02:21,744 - agents_enhanced - INFO - Autonomous features initialized for agent agent_niche_research_1753232540504_157f3921
+2025-07-22 18:02:21,773 - agents_enhanced - INFO - Enhanced agent agent_niche_research_1753232540504_157f3921 initialized with autonomous features
+2025-07-22 18:02:21,878 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:21,967 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:21,967 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup
+2025-07-22 18:02:21,968 - performance_monitoring - INFO - Autonomous performance monitor initialized for startup test_startup
+2025-07-22 18:02:43,654 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-22 18:02:43,807 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 18:02:43,908 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-22 18:02:43,909 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-22 18:02:43,910 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-22 18:02:43,910 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-22 18:02:43,911 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-22 18:02:43,911 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-22 18:02:43,911 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-22 18:02:43,912 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-22 18:02:43,912 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-22 18:02:43,912 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-22 18:02:43,913 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-22 18:02:43,913 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-22 18:02:43,913 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-22 18:02:43,913 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-22 18:02:43,980 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_collection
+2025-07-22 18:02:43,981 - autonomous_enhancements - INFO - SelfTuningAgent initialized: test_agent (niche_researcher)
+2025-07-22 18:02:44,050 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:44,050 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup
+2025-07-22 18:02:49,121 - database - INFO - Database initialized successfully
+2025-07-22 18:02:50,185 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:50,185 - autonomous_enhancements - INFO - SelfTuningAgent initialized: agent_niche_research_1753232569123_565aaefa (niche_researcher)
+2025-07-22 18:02:50,284 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:50,285 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup
+2025-07-22 18:02:50,285 - agents_enhanced - INFO - Autonomous features initialized for agent agent_niche_research_1753232569123_565aaefa
+2025-07-22 18:02:50,305 - agents_enhanced - INFO - Enhanced agent agent_niche_research_1753232569123_565aaefa initialized with autonomous features
+2025-07-22 18:02:50,378 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:50,441 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: test_startup
+2025-07-22 18:02:50,442 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: test_startup
+2025-07-22 18:02:50,442 - performance_monitoring - INFO - Autonomous performance monitor initialized for startup test_startup
+2025-07-23 02:31:38,052 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 02:31:38,793 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 02:31:38,887 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 02:31:38,888 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 02:31:38,888 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 02:31:38,889 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 02:31:38,889 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 02:31:38,890 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 02:31:38,890 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 02:31:38,891 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 02:31:38,891 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 02:31:38,891 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 02:31:38,892 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 02:31:38,892 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 02:31:38,893 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 02:31:38,893 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 02:34:40,255 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 02:34:40,409 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 02:34:40,509 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 02:34:40,510 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 02:34:40,511 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 02:34:40,511 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 02:34:40,512 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 02:34:40,512 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 02:34:40,512 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 02:34:40,513 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 02:34:40,513 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 02:34:40,514 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 02:34:40,514 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 02:34:40,514 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 02:34:40,515 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 02:34:40,515 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 03:00:41,191 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 03:00:41,330 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:00:41,382 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:00:41,383 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 03:00:41,384 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 03:00:41,384 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 03:00:41,385 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 03:00:41,385 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 03:00:41,385 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 03:00:41,386 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 03:00:41,386 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 03:00:41,386 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 03:00:41,387 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 03:00:41,387 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 03:00:41,388 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 03:00:41,388 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 03:05:26,590 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 03:05:26,722 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:05:26,806 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:05:26,806 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 03:05:26,807 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 03:05:26,807 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 03:05:26,808 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 03:05:26,808 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 03:05:26,809 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 03:05:26,809 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 03:05:26,809 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 03:05:26,810 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 03:05:26,810 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 03:05:26,811 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 03:05:26,811 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 03:05:26,811 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 03:06:00,114 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 03:06:00,249 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:06:00,294 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:06:00,294 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 03:06:00,295 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 03:06:00,295 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 03:06:00,296 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 03:06:00,296 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 03:06:00,296 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 03:06:00,296 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 03:06:00,297 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 03:06:00,297 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 03:06:00,297 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 03:06:00,297 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 03:06:00,298 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 03:06:00,298 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 03:07:37,516 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 03:07:37,623 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:07:37,698 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:07:37,698 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 03:07:37,699 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 03:07:37,700 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 03:07:37,700 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 03:07:37,701 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 03:07:37,702 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 03:07:37,702 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 03:07:37,703 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 03:07:37,703 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 03:07:37,703 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 03:07:37,704 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 03:07:37,704 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 03:07:37,705 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 03:07:49,619 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 03:07:49,717 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:07:49,768 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:07:49,768 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 03:07:49,769 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 03:07:49,771 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 03:07:49,772 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 03:07:49,773 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 03:07:49,773 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 03:07:49,774 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 03:07:49,775 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 03:07:49,775 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 03:07:49,776 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 03:07:49,776 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 03:07:49,777 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 03:07:49,777 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully
+2025-07-23 03:08:37,349 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-23 03:08:37,496 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:08:37,564 - autonomous_enhancements - INFO - VectorMemoryManager initialized for collection: autopilot_ventures
+2025-07-23 03:08:37,564 - autonomous_enhancements - INFO - ReinforcementLearningEngine initialized for: autopilot_ventures
+2025-07-23 03:08:37,565 - autonomous_enhancements - INFO - SelfTuningAgent initialized: niche_researcher_agent (niche_researcher)
+2025-07-23 03:08:37,566 - autonomous_enhancements - INFO - SelfTuningAgent initialized: mvp_designer_agent (mvp_designer)
+2025-07-23 03:08:37,567 - autonomous_enhancements - INFO - SelfTuningAgent initialized: marketing_strategist_agent (marketing_strategist)
+2025-07-23 03:08:37,567 - autonomous_enhancements - INFO - SelfTuningAgent initialized: content_creator_agent (content_creator)
+2025-07-23 03:08:37,568 - autonomous_enhancements - INFO - SelfTuningAgent initialized: analytics_agent_agent (analytics_agent)
+2025-07-23 03:08:37,569 - autonomous_enhancements - INFO - SelfTuningAgent initialized: operations_agent_agent (operations_agent)
+2025-07-23 03:08:37,570 - autonomous_enhancements - INFO - SelfTuningAgent initialized: funding_agent_agent (funding_agent)
+2025-07-23 03:08:37,570 - autonomous_enhancements - INFO - SelfTuningAgent initialized: legal_agent_agent (legal_agent)
+2025-07-23 03:08:37,571 - autonomous_enhancements - INFO - SelfTuningAgent initialized: hr_agent_agent (hr_agent)
+2025-07-23 03:08:37,571 - autonomous_enhancements - INFO - SelfTuningAgent initialized: support_agent_agent (support_agent)
+2025-07-23 03:08:37,572 - autonomous_enhancements - INFO - SelfTuningAgent initialized: master_agent_agent (master_agent)
+2025-07-23 03:08:37,573 - autonomous_enhancements - INFO - Phase 1 Autonomous Learning System initialized successfully

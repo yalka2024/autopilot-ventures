@@ -1,0 +1,104 @@
+# AutoPilot Ventures - Google Cloud Monitoring Policy
+displayName: "AutoPilot Ventures - Autonomous Platform Monitoring"
+documentation:
+  content: "Monitoring policy for AutoPilot Ventures autonomous business creation platform"
+  mimeType: "text/markdown"
+
+conditions:
+  - displayName: "High CPU Usage"
+    conditionThreshold:
+      filter: 'resource.type="cloud_run_revision" AND resource.labels.service_name="autopilot-ventures"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 80
+      duration: 300s
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+          crossSeriesReducer: REDUCE_MEAN
+
+  - displayName: "High Memory Usage"
+    conditionThreshold:
+      filter: 'resource.type="cloud_run_revision" AND resource.labels.service_name="autopilot-ventures"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 85
+      duration: 300s
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+          crossSeriesReducer: REDUCE_MEAN
+
+  - displayName: "High Error Rate"
+    conditionThreshold:
+      filter: 'resource.type="cloud_run_revision" AND resource.labels.service_name="autopilot-ventures"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 5
+      duration: 300s
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_RATE
+          crossSeriesReducer: REDUCE_SUM
+
+  - displayName: "Low Success Rate"
+    conditionThreshold:
+      filter: 'resource.type="cloud_run_revision" AND resource.labels.service_name="autopilot-ventures"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 85
+      duration: 600s
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+          crossSeriesReducer: REDUCE_MEAN
+
+  - displayName: "Revenue Drop"
+    conditionThreshold:
+      filter: 'resource.type="cloud_run_revision" AND resource.labels.service_name="autopilot-ventures"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 1000
+      duration: 1800s
+      aggregations:
+        - alignmentPeriod: 300s
+          perSeriesAligner: ALIGN_SUM
+          crossSeriesReducer: REDUCE_SUM
+
+alertStrategy:
+  autoClose: 3600s
+  notificationRateLimit:
+    period: 300s
+
+notificationChannels:
+  - type: "email"
+    displayName: "AutoPilot Ventures Alerts"
+    description: "Email notifications for platform alerts"
+    labels:
+      email_address: "admin@autopilotventures.com"
+
+  - type: "slack"
+    displayName: "AutoPilot Ventures Slack"
+    description: "Slack notifications for platform alerts"
+    labels:
+      channel_name: "#autopilot-alerts"
+
+documentation:
+  content: |
+    # AutoPilot Ventures Monitoring Policy
+    
+    This policy monitors the autonomous business creation platform for:
+    
+    - **High CPU Usage**: Alerts when CPU usage exceeds 80%
+    - **High Memory Usage**: Alerts when memory usage exceeds 85%
+    - **High Error Rate**: Alerts when error rate exceeds 5%
+    - **Low Success Rate**: Alerts when success rate drops below 85%
+    - **Revenue Drop**: Alerts when revenue drops below $1,000 per 30 minutes
+    
+    ## Response Actions
+    
+    1. **Immediate**: Check platform health and logs
+    2. **Short-term**: Scale resources if needed
+    3. **Long-term**: Analyze patterns and optimize
+    
+    ## Emergency Contacts
+    
+    - Platform Admin: admin@autopilotventures.com
+    - Emergency Hotline: +1-555-AUTOPILOT
+    
+  mimeType: "text/markdown" 

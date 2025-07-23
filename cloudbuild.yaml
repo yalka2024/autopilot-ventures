@@ -15,7 +15,19 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
   
-  # Create GKE cluster if it doesn't exist
+  # Check if cluster exists, create if it doesn't
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'container'
+      - 'clusters'
+      - 'list'
+      - '--region=us-central1'
+      - '--filter=name:autopilot-cluster'
+      - '--format=value(name)'
+    id: 'check-cluster-exists'
+    waitFor: ['-']
+  
+  # Create GKE cluster (only if it doesn't exist)
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'container'
@@ -34,23 +46,10 @@ steps:
       - '--workload-pool=$PROJECT_ID.svc.id.goog'
       - '--quiet'
     id: 'create-cluster'
-    waitFor: ['-']
+    waitFor: ['check-cluster-exists']
     allowFailure: true
   
-  # Wait for cluster to be ready
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'container'
-      - 'clusters'
-      - 'describe'
-      - 'autopilot-cluster'
-      - '--region=us-central1'
-      - '--format=value(status)'
-    id: 'check-cluster-status'
-    waitFor: ['create-cluster']
-    allowFailure: true
-  
-  # Wait additional time for cluster to be fully ready
+  # Wait for cluster to be fully ready
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'container'
@@ -59,10 +58,9 @@ steps:
       - 'autopilot-cluster'
       - '--region=us-central1'
       - '--for=condition=ready'
-      - '--timeout=600'
+      - '--timeout=900'
     id: 'wait-cluster-ready'
-    waitFor: ['check-cluster-status']
-    allowFailure: true
+    waitFor: ['create-cluster']
   
   # Get cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -89,7 +87,7 @@ steps:
     waitFor: ['get-credentials']
     allowFailure: true
   
-  # Wait for kubectl to be ready
+  # Test kubectl connectivity
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'get'
@@ -99,7 +97,6 @@ steps:
       - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
     id: 'test-kubectl'
     waitFor: ['create-namespace']
-    allowFailure: true
   
   # Deploy to GKE
   - name: 'gcr.io/cloud-builders/kubectl'

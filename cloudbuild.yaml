@@ -37,6 +37,33 @@ steps:
     waitFor: ['-']
     allowFailure: true
   
+  # Wait for cluster to be ready
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'container'
+      - 'clusters'
+      - 'describe'
+      - 'autopilot-cluster'
+      - '--region=us-central1'
+      - '--format=value(status)'
+    id: 'check-cluster-status'
+    waitFor: ['create-cluster']
+    allowFailure: true
+  
+  # Wait additional time for cluster to be fully ready
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'container'
+      - 'clusters'
+      - 'wait'
+      - 'autopilot-cluster'
+      - '--region=us-central1'
+      - '--for=condition=ready'
+      - '--timeout=600'
+    id: 'wait-cluster-ready'
+    waitFor: ['check-cluster-status']
+    allowFailure: true
+  
   # Get cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
@@ -47,7 +74,7 @@ steps:
       - '--region=us-central1'
       - '--project=$PROJECT_ID'
     id: 'get-credentials'
-    waitFor: ['create-cluster']
+    waitFor: ['wait-cluster-ready']
   
   # Create namespace
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -62,6 +89,18 @@ steps:
     waitFor: ['get-credentials']
     allowFailure: true
   
+  # Wait for kubectl to be ready
+  - name: 'gcr.io/cloud-builders/kubectl'
+    args:
+      - 'get'
+      - 'nodes'
+    env:
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
+    id: 'test-kubectl'
+    waitFor: ['create-namespace']
+    allowFailure: true
+  
   # Deploy to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
@@ -74,7 +113,7 @@ steps:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
     id: 'deploy'
-    waitFor: ['create-namespace']
+    waitFor: ['test-kubectl']
 
 images:
   - 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
@@ -82,4 +121,5 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: 'E2_HIGHCPU_8' 
+  machineType: 'E2_HIGHCPU_8'
+  timeout: '1800s' 

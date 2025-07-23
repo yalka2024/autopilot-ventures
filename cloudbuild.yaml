@@ -15,102 +15,24 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
   
-  # Check if cluster exists, create if it doesn't
+  # Deploy to Cloud Run (much simpler than GKE)
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
-      - 'container'
-      - 'clusters'
-      - 'list'
-      - '--region=us-central1'
-      - '--filter=name:autopilot-cluster'
-      - '--format=value(name)'
-    id: 'check-cluster-exists'
-    waitFor: ['-']
-  
-  # Create GKE cluster (only if it doesn't exist)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'container'
-      - 'clusters'
-      - 'create'
-      - 'autopilot-cluster'
-      - '--region=us-central1'
-      - '--num-nodes=3'
-      - '--min-nodes=1'
-      - '--max-nodes=10'
-      - '--enable-autoscaling'
-      - '--machine-type=e2-standard-2'
-      - '--disk-size=50'
-      - '--enable-network-policy'
-      - '--enable-ip-alias'
-      - '--workload-pool=$PROJECT_ID.svc.id.goog'
-      - '--quiet'
-    id: 'create-cluster'
-    waitFor: ['check-cluster-exists']
-    allowFailure: true
-  
-  # Wait for cluster to be fully ready
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'container'
-      - 'clusters'
-      - 'wait'
-      - 'autopilot-cluster'
-      - '--region=us-central1'
-      - '--for=condition=ready'
-      - '--timeout=900'
-    id: 'wait-cluster-ready'
-    waitFor: ['create-cluster']
-  
-  # Get cluster credentials
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'container'
-      - 'clusters'
-      - 'get-credentials'
-      - 'autopilot-cluster'
-      - '--region=us-central1'
-      - '--project=$PROJECT_ID'
-    id: 'get-credentials'
-    waitFor: ['wait-cluster-ready']
-  
-  # Create namespace
-  - name: 'gcr.io/cloud-builders/kubectl'
-    args:
-      - 'create'
-      - 'namespace'
+      - 'run'
+      - 'deploy'
       - 'autopilot-ventures'
-    env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
-    id: 'create-namespace'
-    waitFor: ['get-credentials']
-    allowFailure: true
-  
-  # Test kubectl connectivity
-  - name: 'gcr.io/cloud-builders/kubectl'
-    args:
-      - 'get'
-      - 'nodes'
-    env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
-    id: 'test-kubectl'
-    waitFor: ['create-namespace']
-  
-  # Deploy to GKE
-  - name: 'gcr.io/cloud-builders/kubectl'
-    args:
-      - 'set'
-      - 'image'
-      - 'deployment/autopilot-ventures'
-      - 'autopilot-ventures=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
-      - '--namespace=autopilot-ventures'
-    env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
-    id: 'deploy'
-    waitFor: ['test-kubectl']
+      - '--image=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=2Gi'
+      - '--cpu=2'
+      - '--max-instances=10'
+      - '--min-instances=1'
+      - '--set-env-vars=PORT=8080,PYTHONPATH=/app,ENVIRONMENT=production'
+      - '--set-env-vars=LOG_LEVEL=INFO'
+    id: 'deploy-cloud-run'
 
 images:
   - 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'

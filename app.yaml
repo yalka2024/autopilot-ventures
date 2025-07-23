@@ -1,0 +1,60 @@
+runtime: python311
+service: autopilot-ventures
+
+env_variables:
+  PYTHONPATH: "."
+  OPENAI_SECRET_KEY: "your_openai_secret_key_here"
+  DEEPL_API_KEY: "your_deepl_api_key_here"
+  STRIPE_SECRET_KEY: "your_stripe_secret_key_here"
+  STRIPE_WEBHOOK_SECRET: "your_stripe_webhook_secret_here"
+  FERNET_KEY: "your_fernet_key_here"
+  DATABASE_URL: "sqlite:///autopilot_ventures.db"
+
+instance_class: F1
+
+automatic_scaling:
+  target_cpu_utilization: 0.6
+  min_instances: 1
+  max_instances: 10
+  target_throughput_utilization: 0.6
+  max_concurrent_requests: 50
+
+manual_scaling:
+  instances: 1
+
+resources:
+  cpu: 1
+  memory_gb: 2
+  disk_size_gb: 10
+
+handlers:
+  - url: /webhook
+    script: webhook_handler.py
+    secure: always
+
+  - url: /health
+    script: main.py
+    secure: always
+
+  - url: /api/.*
+    script: main.py
+    secure: always
+
+  - url: /.*
+    script: main.py
+    secure: always
+
+inbound_services:
+  - warmup
+
+env_variables:
+  GOOGLE_CLOUD_PROJECT: "your-project-id"
+  GOOGLE_CLOUD_REGION: "us-central1"
+
+beta_settings:
+  cloud_sql_instances: "your-project-id:us-central1:your-instance-name"
+
+vpc_access_connector:
+  name: "projects/your-project-id/locations/us-central1/connectors/your-connector-name"
+
+entrypoint: gunicorn -b :$PORT -w 4 -k uvicorn.workers.UvicornWorker main:app 

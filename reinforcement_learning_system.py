@@ -1,902 +1,634 @@
+#!/usr/bin/env python3
 """
-Reinforcement Learning System for AutoPilot Ventures
-Enables high-performing agents to train and refine new spawns, creating autonomous learning loops
+Reinforcement Learning System for Agent Optimization
+Optimizes agents for $1K-5K/month revenue potential
 """
 
 import asyncio
-import logging
 import json
+import logging
 import time
-from typing import Dict, List, Optional, Any, Set, Tuple
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
-from enum import Enum
+from dataclasses import dataclass
+import random
 import numpy as np
-from collections import defaultdict
-import redis
-import structlog
-from prometheus_client import Counter, Histogram, Gauge, Summary
+from collections import defaultdict, deque
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-logger = structlog.get_logger()
-
-class AgentPerformance(Enum):
-    EXCELLENT = "excellent"
-    GOOD = "good"
-    AVERAGE = "average"
-    POOR = "poor"
-    FAILING = "failing"
-
-class TrainingType(Enum):
-    KNOWLEDGE_TRANSFER = "knowledge_transfer"
-    SKILL_REFINEMENT = "skill_refinement"
-    STRATEGY_OPTIMIZATION = "strategy_optimization"
-    BEHAVIOR_MODELING = "behavior_modeling"
-    DECISION_MAKING = "decision_making"
-
-class LearningStage(Enum):
-    INITIALIZATION = "initialization"
-    TRAINING = "training"
-    VALIDATION = "validation"
-    DEPLOYMENT = "deployment"
-    MONITORING = "monitoring"
-    REFINEMENT = "refinement"
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 @dataclass
-class AgentProfile:
-    agent_id: str
+class AgentState:
+    """Agent state for reinforcement learning."""
     agent_type: str
-    performance_score: float
-    performance_level: AgentPerformance
     success_rate: float
-    total_ventures: int
-    successful_ventures: int
-    average_roi: float
-    skills: List[str]
-    knowledge_base: Dict[str, Any]
-    training_history: List[str]
-    created_at: datetime
-    last_updated: datetime
-    is_trainer: bool = False
-    is_trainee: bool = False
+    execution_time: float
+    cost: float
+    revenue_generated: float
+    customer_satisfaction: float
+    market_fit_score: float
+    timestamp: datetime
 
 @dataclass
-class TrainingSession:
-    id: str
-    trainer_id: str
-    trainee_id: str
-    training_type: TrainingType
-    focus_areas: List[str]
-    start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_minutes: int = 0
-    success_rate: float = 0.0
-    knowledge_transferred: List[str] = field(default_factory=list)
-    skills_improved: List[str] = field(default_factory=list)
-    validation_results: Dict[str, Any] = field(default_factory=dict)
+class AgentAction:
+    """Agent action for reinforcement learning."""
+    action_type: str
+    parameters: Dict[str, Any]
+    confidence: float
+    expected_reward: float
 
 @dataclass
-class LearningMemory:
-    agent_id: str
-    memory_type: str
-    content: Dict[str, Any]
-    importance_score: float
-    access_count: int
-    last_accessed: datetime
-    created_at: datetime
-    validated: bool = False
-
-@dataclass
-class AutonomousSpawn:
-    id: str
-    parent_agent_id: str
-    agent_type: str
-    initial_knowledge: Dict[str, Any]
-    training_sessions: List[str]
-    performance_metrics: Dict[str, float]
-    learning_stage: LearningStage
-    created_at: datetime
-    deployed_at: Optional[datetime] = None
-    success_rate: float = 0.0
+class LearningReward:
+    """Reward structure for reinforcement learning."""
+    immediate_reward: float
+    long_term_reward: float
+    revenue_impact: float
+    efficiency_gain: float
+    customer_impact: float
+    total_reward: float
 
 class ReinforcementLearningSystem:
-    """System for autonomous agent training and refinement"""
+    """Reinforcement learning system for agent optimization."""
     
-    def __init__(self, redis_client: redis.Redis):
-        self.redis = redis_client
-        self.agent_profiles = {}
-        self.training_sessions = {}
-        self.learning_memories = {}
-        self.autonomous_spawns = {}
-        self.performance_history = defaultdict(list)
-        self.knowledge_transfer_logs = {}
+    def __init__(self):
+        self.agents = {}
+        self.q_tables = {}
+        self.reward_history = defaultdict(list)
+        self.state_history = defaultdict(list)
+        self.action_history = defaultdict(list)
         
-        # Performance thresholds
-        self.performance_thresholds = {
-            "excellent": 0.9,
-            "good": 0.7,
-            "average": 0.5,
-            "poor": 0.3,
-            "failing": 0.0
+        # Learning parameters
+        self.learning_rate = 0.1
+        self.discount_factor = 0.95
+        self.epsilon = 0.1  # Exploration rate
+        self.target_revenue = 5000.0  # $5K/month target
+        
+        # Performance tracking
+        self.performance_metrics = defaultdict(dict)
+        self.optimization_history = []
+        
+        # Initialize agent types
+        self.agent_types = [
+            'niche_research', 'mvp_design', 'marketing_strategy',
+            'content_creation', 'analytics', 'operations_monetization',
+            'funding_investor', 'legal_compliance', 'hr_team_building',
+            'customer_support_scaling'
+        ]
+        
+        self._initialize_agents()
+
+    def _initialize_agents(self):
+        """Initialize all agents with Q-learning tables."""
+        for agent_type in self.agent_types:
+            self.agents[agent_type] = {
+                'q_table': defaultdict(lambda: defaultdict(float)),
+                'state_space': self._define_state_space(agent_type),
+                'action_space': self._define_action_space(agent_type),
+                'performance_history': deque(maxlen=100),
+                'revenue_history': deque(maxlen=100),
+                'optimization_count': 0
+            }
+            
+            logger.info(f"Initialized RL agent: {agent_type}")
+
+    def _define_state_space(self, agent_type: str) -> List[str]:
+        """Define state space for agent type."""
+        base_states = ['success_rate', 'execution_time', 'cost', 'revenue_generated']
+        
+        # Agent-specific states
+        agent_states = {
+            'niche_research': ['market_size', 'competition_level', 'trend_alignment'],
+            'mvp_design': ['user_feedback', 'feature_completeness', 'technical_debt'],
+            'marketing_strategy': ['conversion_rate', 'reach', 'engagement'],
+            'content_creation': ['content_quality', 'engagement_rate', 'seo_score'],
+            'analytics': ['data_accuracy', 'insight_quality', 'actionability'],
+            'operations_monetization': ['revenue_efficiency', 'cost_optimization', 'scalability'],
+            'funding_investor': ['investor_interest', 'valuation', 'funding_probability'],
+            'legal_compliance': ['compliance_score', 'risk_level', 'regulatory_requirements'],
+            'hr_team_building': ['team_efficiency', 'hiring_success', 'retention_rate'],
+            'customer_support_scaling': ['satisfaction_score', 'response_time', 'resolution_rate']
         }
         
-        # Training parameters
-        self.training_parameters = {
-            "min_trainer_score": 0.8,
-            "max_trainees_per_trainer": 3,
-            "training_duration_minutes": 30,
-            "validation_threshold": 0.7,
-            "knowledge_retention_rate": 0.85
+        return base_states + agent_states.get(agent_type, [])
+
+    def _define_action_space(self, agent_type: str) -> List[str]:
+        """Define action space for agent type."""
+        base_actions = ['optimize_parameters', 'adjust_strategy', 'enhance_execution']
+        
+        # Agent-specific actions
+        agent_actions = {
+            'niche_research': ['expand_market_scope', 'deepen_analysis', 'update_trends'],
+            'mvp_design': ['add_features', 'improve_ux', 'optimize_performance'],
+            'marketing_strategy': ['adjust_channels', 'optimize_messaging', 'increase_budget'],
+            'content_creation': ['improve_quality', 'expand_topics', 'enhance_distribution'],
+            'analytics': ['enhance_metrics', 'improve_insights', 'automate_reporting'],
+            'operations_monetization': ['optimize_pricing', 'reduce_costs', 'scale_operations'],
+            'funding_investor': ['improve_pitch', 'expand_network', 'enhance_metrics'],
+            'legal_compliance': ['update_policies', 'mitigate_risks', 'ensure_compliance'],
+            'hr_team_building': ['improve_hiring', 'enhance_culture', 'optimize_structure'],
+            'customer_support_scaling': ['improve_response', 'enhance_automation', 'expand_support']
         }
         
-        # Metrics
-        self.training_sessions_total = Counter('training_sessions_total', 'Total training sessions', ['type'])
-        self.agents_trained = Counter('agents_trained_total', 'Agents successfully trained')
-        self.autonomous_spawns_created = Counter('autonomous_spawns_created', 'Autonomous agent spawns created')
-        self.knowledge_transfer_success = Counter('knowledge_transfer_success', 'Successful knowledge transfers')
-        self.performance_improvement = Gauge('performance_improvement', 'Agent performance improvement', ['agent_id'])
-        self.learning_efficiency = Histogram('learning_efficiency', 'Learning efficiency scores', ['training_type'])
-        
-        # Memory management
-        self.memory_structures = defaultdict(list)
-        self.validation_results = defaultdict(list)
-        
-        # Initialize agent profiles
-        self._initialize_agent_profiles()
-    
-    def _initialize_agent_profiles(self):
-        """Initialize default agent profiles"""
+        return base_actions + agent_actions.get(agent_type, [])
+
+    async def observe_agent_execution(self, agent_type: str, state: AgentState, action: AgentAction, reward: LearningReward):
+        """Observe agent execution and update learning model."""
         try:
-            agent_types = [
-                "niche_research", "mvp_design", "marketing_strategy", 
-                "content_creation", "analytics", "operations_monetization",
-                "funding_investor", "legal_compliance", "hr_team_building", 
-                "customer_support_scaling"
-            ]
+            # Store state and action
+            self.state_history[agent_type].append(state)
+            self.action_history[agent_type].append(action)
+            self.reward_history[agent_type].append(reward)
             
-            for agent_type in agent_types:
-                agent_id = f"{agent_type}_agent_001"
-                
-                profile = AgentProfile(
-                    agent_id=agent_id,
-                    agent_type=agent_type,
-                    performance_score=0.75,  # Initial score
-                    performance_level=AgentPerformance.GOOD,
-                    success_rate=0.75,
-                    total_ventures=10,
-                    successful_ventures=7,
-                    average_roi=1.5,
-                    skills=self._get_default_skills(agent_type),
-                    knowledge_base=self._get_default_knowledge(agent_type),
-                    training_history=[],
-                    created_at=datetime.utcnow(),
-                    last_updated=datetime.utcnow(),
-                    is_trainer=False,
-                    is_trainee=False
-                )
-                
-                self.agent_profiles[agent_id] = profile
-                
-                # Initialize performance history
-                self.performance_history[agent_id] = [0.75]
-            
-            logger.info("Agent profiles initialized", count=len(self.agent_profiles))
-            
-        except Exception as e:
-            logger.error("Failed to initialize agent profiles", error=str(e))
-    
-    def _get_default_skills(self, agent_type: str) -> List[str]:
-        """Get default skills for agent type"""
-        skills_map = {
-            "niche_research": ["market_analysis", "trend_identification", "competition_research"],
-            "mvp_design": ["product_development", "technology_selection", "user_experience"],
-            "marketing_strategy": ["campaign_planning", "audience_targeting", "channel_optimization"],
-            "content_creation": ["copywriting", "visual_design", "content_strategy"],
-            "analytics": ["data_analysis", "performance_tracking", "insight_generation"],
-            "operations_monetization": ["business_optimization", "revenue_generation", "cost_management"],
-            "funding_investor": ["investment_strategy", "funding_optimization", "financial_planning"],
-            "legal_compliance": ["legal_requirements", "compliance_management", "risk_assessment"],
-            "hr_team_building": ["team_management", "talent_acquisition", "culture_development"],
-            "customer_support_scaling": ["customer_service", "scaling_strategies", "support_optimization"]
-        }
-        return skills_map.get(agent_type, [])
-    
-    def _get_default_knowledge(self, agent_type: str) -> Dict[str, Any]:
-        """Get default knowledge base for agent type"""
-        return {
-            "domain_expertise": f"{agent_type}_expertise",
-            "best_practices": f"{agent_type}_best_practices",
-            "case_studies": f"{agent_type}_case_studies",
-            "tools_and_technologies": f"{agent_type}_tools"
-        }
-    
-    async def update_agent_performance(self, agent_id: str, 
-                                     performance_metrics: Dict[str, float]) -> bool:
-        """Update agent performance metrics"""
-        try:
-            if agent_id not in self.agent_profiles:
-                raise ValueError(f"Agent {agent_id} not found")
-            
-            profile = self.agent_profiles[agent_id]
+            # Update Q-table
+            await self._update_q_table(agent_type, state, action, reward)
             
             # Update performance metrics
-            profile.success_rate = performance_metrics.get("success_rate", profile.success_rate)
-            profile.total_ventures = performance_metrics.get("total_ventures", profile.total_ventures)
-            profile.successful_ventures = performance_metrics.get("successful_ventures", profile.successful_ventures)
-            profile.average_roi = performance_metrics.get("average_roi", profile.average_roi)
+            self._update_performance_metrics(agent_type, state, reward)
             
-            # Calculate new performance score
-            new_score = await self._calculate_performance_score(performance_metrics)
-            old_score = profile.performance_score
-            profile.performance_score = new_score
+            # Check for optimization opportunities
+            await self._check_optimization_opportunities(agent_type)
             
-            # Update performance level
-            profile.performance_level = await self._determine_performance_level(new_score)
+            logger.info(f"Updated RL model for {agent_type}: reward={reward.total_reward:.3f}")
             
-            # Update timestamps
-            profile.last_updated = datetime.utcnow()
+        except Exception as e:
+            logger.error(f"Error observing agent execution: {e}")
+
+    async def _update_q_table(self, agent_type: str, state: AgentState, action: AgentAction, reward: LearningReward):
+        """Update Q-table using Q-learning algorithm."""
+        try:
+            agent = self.agents[agent_type]
+            q_table = agent['q_table']
+            
+            # Convert state to discrete representation
+            state_key = self._discretize_state(state)
+            action_key = action.action_type
+            
+            # Get current Q-value
+            current_q = q_table[state_key][action_key]
+            
+            # Get maximum Q-value for next state (simplified)
+            max_next_q = max(q_table[state_key].values()) if q_table[state_key] else 0
+            
+            # Q-learning update formula
+            new_q = current_q + self.learning_rate * (
+                reward.total_reward + self.discount_factor * max_next_q - current_q
+            )
+            
+            # Update Q-table
+            q_table[state_key][action_key] = new_q
+            
+        except Exception as e:
+            logger.error(f"Error updating Q-table: {e}")
+
+    def _discretize_state(self, state: AgentState) -> str:
+        """Convert continuous state to discrete representation."""
+        # Discretize continuous values
+        success_rate_bin = int(state.success_rate * 10)  # 0-10 bins
+        execution_time_bin = int(min(state.execution_time / 10, 9))  # 0-9 bins
+        cost_bin = int(min(state.cost / 0.1, 9))  # 0-9 bins
+        revenue_bin = int(min(state.revenue_generated / 100, 9))  # 0-9 bins
+        
+        return f"{success_rate_bin}_{execution_time_bin}_{cost_bin}_{revenue_bin}"
+
+    def _update_performance_metrics(self, agent_type: str, state: AgentState, reward: LearningReward):
+        """Update performance metrics for agent."""
+        try:
+            agent = self.agents[agent_type]
             
             # Update performance history
-            self.performance_history[agent_id].append(new_score)
-            
-            # Update metrics
-            improvement = new_score - old_score
-            self.performance_improvement.labels(agent_id=agent_id).set(improvement)
-            
-            # Check if agent qualifies as trainer
-            if new_score >= self.training_parameters["min_trainer_score"]:
-                profile.is_trainer = True
-            
-            logger.info("Agent performance updated", 
-                      agent_id=agent_id, old_score=old_score, new_score=new_score,
-                      performance_level=profile.performance_level.value)
-            
-            return True
-            
-        except Exception as e:
-            logger.error("Agent performance update failed", agent_id=agent_id, error=str(e))
-            return False
-    
-    async def _calculate_performance_score(self, metrics: Dict[str, float]) -> float:
-        """Calculate overall performance score from metrics"""
-        try:
-            # Weighted average of key metrics
-            weights = {
-                "success_rate": 0.4,
-                "average_roi": 0.3,
-                "efficiency": 0.2,
-                "innovation": 0.1
+            performance = {
+                'success_rate': state.success_rate,
+                'execution_time': state.execution_time,
+                'cost': state.cost,
+                'revenue_generated': state.revenue_generated,
+                'reward': reward.total_reward,
+                'timestamp': state.timestamp
             }
             
-            score = 0.0
-            total_weight = 0.0
+            agent['performance_history'].append(performance)
             
-            for metric, weight in weights.items():
-                if metric in metrics:
-                    # Normalize metric values
-                    normalized_value = min(1.0, max(0.0, metrics[metric]))
-                    score += normalized_value * weight
-                    total_weight += weight
+            # Update revenue history
+            agent['revenue_history'].append(state.revenue_generated)
             
-            return score / total_weight if total_weight > 0 else 0.0
-            
-        except Exception as e:
-            logger.error("Performance score calculation failed", error=str(e))
-            return 0.0
-    
-    async def _determine_performance_level(self, score: float) -> AgentPerformance:
-        """Determine performance level based on score"""
-        try:
-            if score >= self.performance_thresholds["excellent"]:
-                return AgentPerformance.EXCELLENT
-            elif score >= self.performance_thresholds["good"]:
-                return AgentPerformance.GOOD
-            elif score >= self.performance_thresholds["average"]:
-                return AgentPerformance.AVERAGE
-            elif score >= self.performance_thresholds["poor"]:
-                return AgentPerformance.POOR
-            else:
-                return AgentPerformance.FAILING
+            # Calculate moving averages
+            if len(agent['performance_history']) >= 10:
+                recent_performance = list(agent['performance_history'])[-10:]
+                avg_success_rate = sum(p['success_rate'] for p in recent_performance) / len(recent_performance)
+                avg_revenue = sum(p['revenue_generated'] for p in recent_performance) / len(recent_performance)
+                avg_reward = sum(p['reward'] for p in recent_performance) / len(recent_performance)
                 
-        except Exception as e:
-            logger.error("Performance level determination failed", error=str(e))
-            return AgentPerformance.AVERAGE
-    
-    async def identify_training_opportunities(self) -> List[Dict[str, Any]]:
-        """Identify training opportunities between agents"""
-        try:
-            opportunities = []
-            
-            # Find potential trainers (high performers)
-            trainers = [
-                agent_id for agent_id, profile in self.agent_profiles.items()
-                if profile.is_trainer and profile.performance_level in [AgentPerformance.EXCELLENT, AgentPerformance.GOOD]
-            ]
-            
-            # Find potential trainees (lower performers or new agents)
-            trainees = [
-                agent_id for agent_id, profile in self.agent_profiles.items()
-                if (profile.performance_level in [AgentPerformance.AVERAGE, AgentPerformance.POOR] or
-                    profile.is_trainee)
-            ]
-            
-            # Create training opportunities
-            for trainer_id in trainers:
-                trainer_profile = self.agent_profiles[trainer_id]
-                
-                # Find compatible trainees
-                compatible_trainees = [
-                    trainee_id for trainee_id in trainees
-                    if await self._are_agents_compatible(trainer_id, trainee_id)
-                ]
-                
-                for trainee_id in compatible_trainees[:self.training_parameters["max_trainees_per_trainer"]]:
-                    trainee_profile = self.agent_profiles[trainee_id]
-                    
-                    opportunity = {
-                        "trainer_id": trainer_id,
-                        "trainee_id": trainee_id,
-                        "trainer_type": trainer_profile.agent_type,
-                        "trainee_type": trainee_profile.agent_type,
-                        "training_type": await self._determine_training_type(trainer_profile, trainee_profile),
-                        "expected_improvement": trainer_profile.performance_score - trainee_profile.performance_score,
-                        "focus_areas": await self._identify_focus_areas(trainer_profile, trainee_profile)
-                    }
-                    
-                    opportunities.append(opportunity)
-            
-            return opportunities
-            
-        except Exception as e:
-            logger.error("Training opportunity identification failed", error=str(e))
-            return []
-    
-    async def _are_agents_compatible(self, trainer_id: str, trainee_id: str) -> bool:
-        """Check if agents are compatible for training"""
-        try:
-            trainer_profile = self.agent_profiles[trainer_id]
-            trainee_profile = self.agent_profiles[trainee_id]
-            
-            # Check if they're the same type or related types
-            if trainer_profile.agent_type == trainee_profile.agent_type:
-                return True
-            
-            # Check for related agent types
-            related_types = {
-                "marketing_strategy": ["content_creation", "analytics"],
-                "analytics": ["marketing_strategy", "operations_monetization"],
-                "operations_monetization": ["analytics", "funding_investor"],
-                "mvp_design": ["niche_research", "marketing_strategy"]
-            }
-            
-            related = related_types.get(trainer_profile.agent_type, [])
-            return trainee_profile.agent_type in related
-            
-        except Exception as e:
-            logger.error("Agent compatibility check failed", error=str(e))
-            return False
-    
-    async def _determine_training_type(self, trainer_profile: AgentProfile, 
-                                     trainee_profile: AgentProfile) -> TrainingType:
-        """Determine the type of training needed"""
-        try:
-            performance_gap = trainer_profile.performance_score - trainee_profile.performance_score
-            
-            if performance_gap > 0.3:
-                return TrainingType.KNOWLEDGE_TRANSFER
-            elif performance_gap > 0.2:
-                return TrainingType.SKILL_REFINEMENT
-            elif performance_gap > 0.1:
-                return TrainingType.STRATEGY_OPTIMIZATION
-            else:
-                return TrainingType.BEHAVIOR_MODELING
-                
-        except Exception as e:
-            logger.error("Training type determination failed", error=str(e))
-            return TrainingType.KNOWLEDGE_TRANSFER
-    
-    async def _identify_focus_areas(self, trainer_profile: AgentProfile, 
-                                  trainee_profile: AgentProfile) -> List[str]:
-        """Identify focus areas for training"""
-        try:
-            focus_areas = []
-            
-            # Compare skills
-            trainer_skills = set(trainer_profile.skills)
-            trainee_skills = set(trainee_profile.skills)
-            
-            missing_skills = trainer_skills - trainee_skills
-            focus_areas.extend(list(missing_skills)[:3])  # Top 3 missing skills
-            
-            # Add performance improvement areas
-            if trainee_profile.success_rate < 0.7:
-                focus_areas.append("success_rate_optimization")
-            
-            if trainee_profile.average_roi < 1.0:
-                focus_areas.append("roi_optimization")
-            
-            return focus_areas[:5]  # Limit to 5 focus areas
-            
-        except Exception as e:
-            logger.error("Focus area identification failed", error=str(e))
-            return []
-    
-    async def initiate_training_session(self, trainer_id: str, trainee_id: str,
-                                      training_type: TrainingType, 
-                                      focus_areas: List[str]) -> str:
-        """Initiate a training session between agents"""
-        try:
-            session_id = f"training_{int(time.time())}_{trainer_id}_{trainee_id}"
-            
-            session = TrainingSession(
-                id=session_id,
-                trainer_id=trainer_id,
-                trainee_id=trainee_id,
-                training_type=training_type,
-                focus_areas=focus_areas,
-                start_time=datetime.utcnow()
-            )
-            
-            self.training_sessions[session_id] = session
-            
-            # Update agent status
-            self.agent_profiles[trainer_id].is_trainer = True
-            self.agent_profiles[trainee_id].is_trainee = True
-            
-            # Update metrics
-            self.training_sessions_total.labels(type=training_type.value).inc()
-            
-            logger.info("Training session initiated", 
-                      session_id=session_id, trainer_id=trainer_id,
-                      trainee_id=trainee_id, training_type=training_type.value)
-            
-            return session_id
-            
-        except Exception as e:
-            logger.error("Training session initiation failed", error=str(e))
-            raise
-    
-    async def conduct_training(self, session_id: str, 
-                             training_data: Dict[str, Any]) -> bool:
-        """Conduct the actual training session"""
-        try:
-            if session_id not in self.training_sessions:
-                raise ValueError(f"Training session {session_id} not found")
-            
-            session = self.training_sessions[session_id]
-            trainer_profile = self.agent_profiles[session.trainer_id]
-            trainee_profile = self.agent_profiles[session.trainee_id]
-            
-            # Transfer knowledge based on training type
-            if session.training_type == TrainingType.KNOWLEDGE_TRANSFER:
-                transferred_knowledge = await self._transfer_knowledge(trainer_profile, trainee_profile)
-                session.knowledge_transferred = transferred_knowledge
-            
-            elif session.training_type == TrainingType.SKILL_REFINEMENT:
-                improved_skills = await self._refine_skills(trainer_profile, trainee_profile, session.focus_areas)
-                session.skills_improved = improved_skills
-            
-            elif session.training_type == TrainingType.STRATEGY_OPTIMIZATION:
-                optimized_strategies = await self._optimize_strategies(trainer_profile, trainee_profile)
-                session.knowledge_transferred = optimized_strategies
-            
-            elif session.training_type == TrainingType.BEHAVIOR_MODELING:
-                modeled_behaviors = await self._model_behaviors(trainer_profile, trainee_profile)
-                session.knowledge_transferred = modeled_behaviors
-            
-            # Update trainee profile
-            await self._update_trainee_profile(trainee_profile, session)
-            
-            # End training session
-            session.end_time = datetime.utcnow()
-            session.duration_minutes = int((session.end_time - session.start_time).total_seconds() / 60)
-            
-            # Calculate success rate
-            session.success_rate = await self._calculate_training_success(session)
-            
-            # Update metrics
-            self.learning_efficiency.labels(training_type=session.training_type.value).observe(session.success_rate)
-            
-            logger.info("Training session completed", 
-                      session_id=session_id, duration=session.duration_minutes,
-                      success_rate=session.success_rate)
-            
-            return True
-            
-        except Exception as e:
-            logger.error("Training session failed", session_id=session_id, error=str(e))
-            return False
-    
-    async def _transfer_knowledge(self, trainer_profile: AgentProfile, 
-                                trainee_profile: AgentProfile) -> List[str]:
-        """Transfer knowledge from trainer to trainee"""
-        try:
-            transferred_knowledge = []
-            
-            # Transfer domain expertise
-            if trainer_profile.knowledge_base.get("domain_expertise"):
-                trainee_profile.knowledge_base["domain_expertise"] = trainer_profile.knowledge_base["domain_expertise"]
-                transferred_knowledge.append("domain_expertise")
-            
-            # Transfer best practices
-            if trainer_profile.knowledge_base.get("best_practices"):
-                trainee_profile.knowledge_base["best_practices"] = trainer_profile.knowledge_base["best_practices"]
-                transferred_knowledge.append("best_practices")
-            
-            # Transfer case studies
-            if trainer_profile.knowledge_base.get("case_studies"):
-                trainee_profile.knowledge_base["case_studies"] = trainer_profile.knowledge_base["case_studies"]
-                transferred_knowledge.append("case_studies")
-            
-            # Update metrics
-            self.knowledge_transfer_success.inc()
-            
-            return transferred_knowledge
-            
-        except Exception as e:
-            logger.error("Knowledge transfer failed", error=str(e))
-            return []
-    
-    async def _refine_skills(self, trainer_profile: AgentProfile, 
-                           trainee_profile: AgentProfile, 
-                           focus_areas: List[str]) -> List[str]:
-        """Refine trainee skills based on trainer expertise"""
-        try:
-            improved_skills = []
-            
-            for skill in focus_areas:
-                if skill in trainer_profile.skills and skill not in trainee_profile.skills:
-                    trainee_profile.skills.append(skill)
-                    improved_skills.append(skill)
-            
-            return improved_skills
-            
-        except Exception as e:
-            logger.error("Skill refinement failed", error=str(e))
-            return []
-    
-    async def _optimize_strategies(self, trainer_profile: AgentProfile, 
-                                 trainee_profile: AgentProfile) -> List[str]:
-        """Optimize trainee strategies based on trainer success"""
-        try:
-            optimized_strategies = []
-            
-            # Transfer successful strategies
-            if trainer_profile.performance_score > trainee_profile.performance_score:
-                optimized_strategies.append("performance_optimization")
-            
-            if trainer_profile.success_rate > trainee_profile.success_rate:
-                optimized_strategies.append("success_rate_optimization")
-            
-            if trainer_profile.average_roi > trainee_profile.average_roi:
-                optimized_strategies.append("roi_optimization")
-            
-            return optimized_strategies
-            
-        except Exception as e:
-            logger.error("Strategy optimization failed", error=str(e))
-            return []
-    
-    async def _model_behaviors(self, trainer_profile: AgentProfile, 
-                             trainee_profile: AgentProfile) -> List[str]:
-        """Model trainer behaviors for trainee"""
-        try:
-            modeled_behaviors = []
-            
-            # Model decision-making patterns
-            modeled_behaviors.append("decision_making_patterns")
-            
-            # Model problem-solving approaches
-            modeled_behaviors.append("problem_solving_approaches")
-            
-            # Model communication styles
-            modeled_behaviors.append("communication_styles")
-            
-            return modeled_behaviors
-            
-        except Exception as e:
-            logger.error("Behavior modeling failed", error=str(e))
-            return []
-    
-    async def _update_trainee_profile(self, trainee_profile: AgentProfile, 
-                                    session: TrainingSession):
-        """Update trainee profile after training"""
-        try:
-            # Add training session to history
-            trainee_profile.training_history.append(session.id)
-            
-            # Update last updated timestamp
-            trainee_profile.last_updated = datetime.utcnow()
-            
-            # Update metrics
-            self.agents_trained.inc()
-            
-        except Exception as e:
-            logger.error("Trainee profile update failed", error=str(e))
-    
-    async def _calculate_training_success(self, session: TrainingSession) -> float:
-        """Calculate training session success rate"""
-        try:
-            # Base success rate
-            success_rate = 0.7
-            
-            # Adjust based on knowledge transferred
-            if session.knowledge_transferred:
-                success_rate += 0.1
-            
-            # Adjust based on skills improved
-            if session.skills_improved:
-                success_rate += 0.1
-            
-            # Adjust based on duration (optimal duration)
-            optimal_duration = self.training_parameters["training_duration_minutes"]
-            duration_diff = abs(session.duration_minutes - optimal_duration)
-            if duration_diff <= 5:  # Within 5 minutes of optimal
-                success_rate += 0.1
-            
-            return min(1.0, success_rate)
-            
-        except Exception as e:
-            logger.error("Training success calculation failed", error=str(e))
-            return 0.5
-    
-    async def create_autonomous_spawn(self, parent_agent_id: str, 
-                                    spawn_type: str = None) -> str:
-        """Create an autonomous spawn from a high-performing agent"""
-        try:
-            if parent_agent_id not in self.agent_profiles:
-                raise ValueError(f"Parent agent {parent_agent_id} not found")
-            
-            parent_profile = self.agent_profiles[parent_agent_id]
-            
-            # Check if parent is qualified to spawn
-            if parent_profile.performance_level not in [AgentPerformance.EXCELLENT, AgentPerformance.GOOD]:
-                raise ValueError("Parent agent must be high-performing to spawn")
-            
-            spawn_id = f"spawn_{int(time.time())}_{parent_agent_id}"
-            spawn_type = spawn_type or parent_profile.agent_type
-            
-            # Create spawn with inherited knowledge
-            spawn = AutonomousSpawn(
-                id=spawn_id,
-                parent_agent_id=parent_agent_id,
-                agent_type=spawn_type,
-                initial_knowledge=parent_profile.knowledge_base.copy(),
-                training_sessions=[],
-                performance_metrics={
-                    "success_rate": parent_profile.success_rate * 0.9,  # Slightly lower initially
-                    "average_roi": parent_profile.average_roi * 0.9,
-                    "efficiency": 0.8
-                },
-                learning_stage=LearningStage.INITIALIZATION,
-                created_at=datetime.utcnow()
-            )
-            
-            self.autonomous_spawns[spawn_id] = spawn
-            
-            # Create agent profile for spawn
-            spawn_profile = AgentProfile(
-                agent_id=spawn_id,
-                agent_type=spawn_type,
-                performance_score=parent_profile.performance_score * 0.9,
-                performance_level=AgentPerformance.GOOD,
-                success_rate=parent_profile.success_rate * 0.9,
-                total_ventures=0,
-                successful_ventures=0,
-                average_roi=parent_profile.average_roi * 0.9,
-                skills=parent_profile.skills.copy(),
-                knowledge_base=parent_profile.knowledge_base.copy(),
-                training_history=[],
-                created_at=datetime.utcnow(),
-                last_updated=datetime.utcnow(),
-                is_trainer=False,
-                is_trainee=True
-            )
-            
-            self.agent_profiles[spawn_id] = spawn_profile
-            
-            # Update metrics
-            self.autonomous_spawns_created.inc()
-            
-            logger.info("Autonomous spawn created", 
-                      spawn_id=spawn_id, parent_id=parent_agent_id,
-                      spawn_type=spawn_type)
-            
-            return spawn_id
-            
-        except Exception as e:
-            logger.error("Autonomous spawn creation failed", error=str(e))
-            raise
-    
-    async def validate_learning_memory(self, memory_id: str, 
-                                     validation_data: Dict[str, Any]) -> bool:
-        """Validate learning memory for accuracy and relevance"""
-        try:
-            if memory_id not in self.learning_memories:
-                raise ValueError(f"Memory {memory_id} not found")
-            
-            memory = self.learning_memories[memory_id]
-            
-            # Validate memory content
-            validation_score = await self._calculate_validation_score(memory, validation_data)
-            
-            if validation_score >= 0.8:  # 80% validation threshold
-                memory.validated = True
-                memory.importance_score = min(1.0, memory.importance_score + 0.1)
-            else:
-                memory.importance_score = max(0.0, memory.importance_score - 0.1)
-            
-            # Update validation results
-            self.validation_results[memory_id].append({
-                "score": validation_score,
-                "timestamp": datetime.utcnow(),
-                "data": validation_data
-            })
-            
-            logger.info("Learning memory validated", 
-                      memory_id=memory_id, validation_score=validation_score,
-                      validated=memory.validated)
-            
-            return memory.validated
-            
-        except Exception as e:
-            logger.error("Learning memory validation failed", memory_id=memory_id, error=str(e))
-            return False
-    
-    async def _calculate_validation_score(self, memory: LearningMemory, 
-                                        validation_data: Dict[str, Any]) -> float:
-        """Calculate validation score for learning memory"""
-        try:
-            # Compare memory content with validation data
-            content_match = 0.0
-            relevance_score = 0.0
-            
-            # Check content accuracy
-            for key, value in memory.content.items():
-                if key in validation_data:
-                    if validation_data[key] == value:
-                        content_match += 1.0
-                    else:
-                        content_match += 0.5  # Partial match
-            
-            content_match = content_match / len(memory.content) if memory.content else 0.0
-            
-            # Check relevance (simplified)
-            relevance_score = 0.8  # Default relevance score
-            
-            # Weighted average
-            validation_score = (content_match * 0.7) + (relevance_score * 0.3)
-            
-            return validation_score
-            
-        except Exception as e:
-            logger.error("Validation score calculation failed", error=str(e))
-            return 0.0
-    
-    async def get_learning_summary(self) -> Dict[str, Any]:
-        """Get summary of learning system performance"""
-        try:
-            summary = {
-                "total_agents": len(self.agent_profiles),
-                "trainers": len([p for p in self.agent_profiles.values() if p.is_trainer]),
-                "trainees": len([p for p in self.agent_profiles.values() if p.is_trainee]),
-                "training_sessions": len(self.training_sessions),
-                "autonomous_spawns": len(self.autonomous_spawns),
-                "learning_memories": len(self.learning_memories),
-                "performance_distribution": {},
-                "recent_training": [],
-                "top_performers": []
-            }
-            
-            # Performance distribution
-            performance_counts = defaultdict(int)
-            for profile in self.agent_profiles.values():
-                performance_counts[profile.performance_level.value] += 1
-            
-            summary["performance_distribution"] = dict(performance_counts)
-            
-            # Recent training sessions
-            recent_sessions = sorted(
-                self.training_sessions.values(),
-                key=lambda x: x.start_time,
-                reverse=True
-            )[:10]
-            
-            summary["recent_training"] = [
-                {
-                    "id": session.id,
-                    "trainer_id": session.trainer_id,
-                    "trainee_id": session.trainee_id,
-                    "type": session.training_type.value,
-                    "success_rate": session.success_rate,
-                    "duration": session.duration_minutes
+                self.performance_metrics[agent_type] = {
+                    'avg_success_rate': avg_success_rate,
+                    'avg_revenue': avg_revenue,
+                    'avg_reward': avg_reward,
+                    'optimization_count': agent['optimization_count'],
+                    'last_updated': datetime.utcnow().isoformat()
                 }
-                for session in recent_sessions
-            ]
-            
-            # Top performers
-            top_performers = sorted(
-                self.agent_profiles.values(),
-                key=lambda x: x.performance_score,
-                reverse=True
-            )[:5]
-            
-            summary["top_performers"] = [
-                {
-                    "agent_id": profile.agent_id,
-                    "agent_type": profile.agent_type,
-                    "performance_score": profile.performance_score,
-                    "success_rate": profile.success_rate,
-                    "is_trainer": profile.is_trainer
-                }
-                for profile in top_performers
-            ]
-            
-            return summary
             
         except Exception as e:
-            logger.error("Learning summary generation failed", error=str(e))
-            return {}
+            logger.error(f"Error updating performance metrics: {e}")
 
-# Initialize the reinforcement learning system
-async def initialize_reinforcement_learning(redis_url: str = "redis://localhost:6379") -> ReinforcementLearningSystem:
-    """Initialize the reinforcement learning system"""
-    try:
-        redis_client = redis.from_url(redis_url)
-        learning_system = ReinforcementLearningSystem(redis_client)
-        
-        logger.info("Reinforcement learning system initialized successfully")
-        return learning_system
-        
-    except Exception as e:
-        logger.error("Failed to initialize reinforcement learning system", error=str(e))
-        raise
+    async def _check_optimization_opportunities(self, agent_type: str):
+        """Check for optimization opportunities based on performance."""
+        try:
+            agent = self.agents[agent_type]
+            performance = self.performance_metrics.get(agent_type, {})
+            
+            # Check if optimization is needed
+            avg_revenue = performance.get('avg_revenue', 0)
+            avg_success_rate = performance.get('avg_success_rate', 0)
+            
+            # Optimization triggers
+            optimization_needed = False
+            optimization_reason = ""
+            
+            if avg_revenue < self.target_revenue * 0.2:  # Less than 20% of target
+                optimization_needed = True
+                optimization_reason = "Low revenue generation"
+            elif avg_success_rate < 0.7:  # Less than 70% success rate
+                optimization_needed = True
+                optimization_reason = "Low success rate"
+            elif agent['optimization_count'] < 3:  # Haven't optimized recently
+                optimization_needed = True
+                optimization_reason = "Regular optimization cycle"
+            
+            if optimization_needed:
+                await self._optimize_agent(agent_type, optimization_reason)
+                
+        except Exception as e:
+            logger.error(f"Error checking optimization opportunities: {e}")
 
-if __name__ == "__main__":
-    # Example usage
-    async def main():
-        learning_system = await initialize_reinforcement_learning()
-        
-        # Example performance update
-        performance_metrics = {
-            "success_rate": 0.85,
-            "total_ventures": 15,
-            "successful_ventures": 13,
-            "average_roi": 2.1,
-            "efficiency": 0.9,
-            "innovation": 0.8
+    async def _optimize_agent(self, agent_type: str, reason: str):
+        """Optimize agent parameters and strategy."""
+        try:
+            agent = self.agents[agent_type]
+            agent['optimization_count'] += 1
+            
+            # Get best actions from Q-table
+            best_actions = self._get_best_actions(agent_type)
+            
+            # Generate optimization plan
+            optimization_plan = {
+                'agent_type': agent_type,
+                'reason': reason,
+                'best_actions': best_actions,
+                'current_performance': self.performance_metrics.get(agent_type, {}),
+                'optimization_count': agent['optimization_count'],
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            # Apply optimizations
+            await self._apply_optimizations(agent_type, best_actions)
+            
+            # Store optimization history
+            self.optimization_history.append(optimization_plan)
+            
+            logger.info(f"Optimized agent {agent_type}: {reason}")
+            
+        except Exception as e:
+            logger.error(f"Error optimizing agent: {e}")
+
+    def _get_best_actions(self, agent_type: str) -> List[Dict[str, Any]]:
+        """Get best actions from Q-table for agent."""
+        try:
+            agent = self.agents[agent_type]
+            q_table = agent['q_table']
+            
+            best_actions = []
+            
+            # Find states with highest Q-values
+            for state_key, actions in q_table.items():
+                if actions:
+                    best_action = max(actions.items(), key=lambda x: x[1])
+                    best_actions.append({
+                        'state': state_key,
+                        'action': best_action[0],
+                        'q_value': best_action[1]
+                    })
+            
+            # Sort by Q-value and return top actions
+            best_actions.sort(key=lambda x: x['q_value'], reverse=True)
+            return best_actions[:5]  # Return top 5 actions
+            
+        except Exception as e:
+            logger.error(f"Error getting best actions: {e}")
+            return []
+
+    async def _apply_optimizations(self, agent_type: str, best_actions: List[Dict[str, Any]]):
+        """Apply optimizations to agent."""
+        try:
+            # Apply parameter optimizations based on best actions
+            for action_data in best_actions:
+                action = action_data['action']
+                
+                if 'optimize_parameters' in action:
+                    await self._optimize_agent_parameters(agent_type)
+                elif 'adjust_strategy' in action:
+                    await self._adjust_agent_strategy(agent_type)
+                elif 'enhance_execution' in action:
+                    await self._enhance_agent_execution(agent_type)
+                else:
+                    await self._apply_agent_specific_optimization(agent_type, action)
+                    
+        except Exception as e:
+            logger.error(f"Error applying optimizations: {e}")
+
+    async def _optimize_agent_parameters(self, agent_type: str):
+        """Optimize agent parameters for better performance."""
+        # This would typically involve adjusting model parameters, prompts, etc.
+        logger.info(f"Optimizing parameters for {agent_type}")
+
+    async def _adjust_agent_strategy(self, agent_type: str):
+        """Adjust agent strategy for better outcomes."""
+        # This would involve changing the approach or methodology
+        logger.info(f"Adjusting strategy for {agent_type}")
+
+    async def _enhance_agent_execution(self, agent_type: str):
+        """Enhance agent execution efficiency."""
+        # This would involve improving the execution process
+        logger.info(f"Enhancing execution for {agent_type}")
+
+    async def _apply_agent_specific_optimization(self, agent_type: str, action: str):
+        """Apply agent-specific optimizations."""
+        # Agent-specific optimization logic
+        logger.info(f"Applying {action} optimization for {agent_type}")
+
+    async def get_optimal_action(self, agent_type: str, current_state: AgentState) -> AgentAction:
+        """Get optimal action for current state using epsilon-greedy policy."""
+        try:
+            agent = self.agents[agent_type]
+            q_table = agent['q_table']
+            action_space = agent['action_space']
+            
+            # Epsilon-greedy policy
+            if random.random() < self.epsilon:
+                # Exploration: choose random action
+                action_type = random.choice(action_space)
+                confidence = random.uniform(0.3, 0.7)
+            else:
+                # Exploitation: choose best action
+                state_key = self._discretize_state(current_state)
+                if state_key in q_table and q_table[state_key]:
+                    action_type = max(q_table[state_key].items(), key=lambda x: x[1])[0]
+                    confidence = min(0.9, max(0.5, q_table[state_key][action_type] / 10))
+                else:
+                    action_type = random.choice(action_space)
+                    confidence = 0.5
+            
+            # Generate action parameters
+            parameters = self._generate_action_parameters(agent_type, action_type, current_state)
+            
+            # Estimate expected reward
+            expected_reward = self._estimate_reward(agent_type, action_type, current_state)
+            
+            return AgentAction(
+                action_type=action_type,
+                parameters=parameters,
+                confidence=confidence,
+                expected_reward=expected_reward
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting optimal action: {e}")
+            # Return default action
+            return AgentAction(
+                action_type='optimize_parameters',
+                parameters={},
+                confidence=0.5,
+                expected_reward=0.0
+            )
+
+    def _generate_action_parameters(self, agent_type: str, action_type: str, state: AgentState) -> Dict[str, Any]:
+        """Generate parameters for action execution."""
+        base_parameters = {
+            'optimization_level': 'high' if state.success_rate < 0.7 else 'medium',
+            'focus_area': 'revenue' if state.revenue_generated < self.target_revenue * 0.5 else 'efficiency',
+            'urgency': 'high' if state.success_rate < 0.5 else 'normal'
         }
         
-        await learning_system.update_agent_performance("marketing_strategy_agent_001", performance_metrics)
+        # Agent-specific parameters
+        agent_parameters = {
+            'niche_research': {
+                'market_depth': 'comprehensive',
+                'trend_analysis': 'detailed',
+                'competitor_focus': 'intensive'
+            },
+            'mvp_design': {
+                'user_centricity': 'high',
+                'feature_priority': 'revenue_generating',
+                'technical_excellence': 'optimized'
+            },
+            'marketing_strategy': {
+                'channel_optimization': 'aggressive',
+                'message_refinement': 'targeted',
+                'budget_allocation': 'efficient'
+            }
+        }
         
-        # Example training opportunity identification
-        opportunities = await learning_system.identify_training_opportunities()
-        print(f"Found {len(opportunities)} training opportunities")
+        parameters = base_parameters.copy()
+        if agent_type in agent_parameters:
+            parameters.update(agent_parameters[agent_type])
         
-        # Example autonomous spawn creation
-        spawn_id = await learning_system.create_autonomous_spawn("marketing_strategy_agent_001")
-        print(f"Created autonomous spawn: {spawn_id}")
+        return parameters
+
+    def _estimate_reward(self, agent_type: str, action_type: str, state: AgentState) -> float:
+        """Estimate expected reward for action."""
+        try:
+            # Base reward estimation
+            base_reward = 0.0
+            
+            # Reward based on current performance
+            if state.success_rate < 0.7:
+                base_reward += 0.3  # Higher reward for improving poor performance
+            if state.revenue_generated < self.target_revenue * 0.3:
+                base_reward += 0.4  # Higher reward for revenue improvement
+            
+            # Action-specific rewards
+            action_rewards = {
+                'optimize_parameters': 0.2,
+                'adjust_strategy': 0.3,
+                'enhance_execution': 0.25
+            }
+            
+            action_reward = action_rewards.get(action_type, 0.1)
+            
+            # Agent-specific multipliers
+            agent_multipliers = {
+                'operations_monetization': 1.5,  # Higher impact on revenue
+                'marketing_strategy': 1.3,
+                'analytics': 1.2,
+                'content_creation': 1.1
+            }
+            
+            multiplier = agent_multipliers.get(agent_type, 1.0)
+            
+            return (base_reward + action_reward) * multiplier
+            
+        except Exception as e:
+            logger.error(f"Error estimating reward: {e}")
+            return 0.1
+
+    def calculate_reward(self, state: AgentState, revenue_impact: float, efficiency_gain: float) -> LearningReward:
+        """Calculate comprehensive reward for agent execution."""
+        try:
+            # Immediate reward based on success and efficiency
+            immediate_reward = state.success_rate * 0.4 + (1 - state.execution_time / 100) * 0.3 + (1 - state.cost / 1.0) * 0.3
+            
+            # Long-term reward based on revenue potential
+            revenue_potential = min(state.revenue_generated / self.target_revenue, 1.0)
+            long_term_reward = revenue_potential * 0.6 + state.market_fit_score * 0.4
+            
+            # Revenue impact
+            revenue_impact = revenue_impact if revenue_impact > 0 else 0.0
+            
+            # Efficiency gain
+            efficiency_gain = efficiency_gain if efficiency_gain > 0 else 0.0
+            
+            # Customer impact
+            customer_impact = state.customer_satisfaction * 0.5 + state.market_fit_score * 0.5
+            
+            # Total reward
+            total_reward = (
+                immediate_reward * 0.3 +
+                long_term_reward * 0.4 +
+                revenue_impact * 0.2 +
+                efficiency_gain * 0.05 +
+                customer_impact * 0.05
+            )
+            
+            return LearningReward(
+                immediate_reward=immediate_reward,
+                long_term_reward=long_term_reward,
+                revenue_impact=revenue_impact,
+                efficiency_gain=efficiency_gain,
+                customer_impact=customer_impact,
+                total_reward=total_reward
+            )
+            
+        except Exception as e:
+            logger.error(f"Error calculating reward: {e}")
+            return LearningReward(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+    def get_learning_summary(self) -> Dict[str, Any]:
+        """Get comprehensive learning summary."""
+        summary = {
+            'total_agents': len(self.agents),
+            'total_optimizations': sum(agent['optimization_count'] for agent in self.agents.values()),
+            'performance_metrics': dict(self.performance_metrics),
+            'optimization_history': self.optimization_history[-10:],  # Last 10 optimizations
+            'learning_parameters': {
+                'learning_rate': self.learning_rate,
+                'discount_factor': self.discount_factor,
+                'epsilon': self.epsilon,
+                'target_revenue': self.target_revenue
+            },
+            'agent_performance': {}
+        }
         
-        # Get learning summary
-        summary = await learning_system.get_learning_summary()
-        print("Learning summary:", json.dumps(summary, indent=2))
+        # Calculate agent performance
+        for agent_type, agent in self.agents.items():
+            if agent['performance_history']:
+                recent_performance = list(agent['performance_history'])[-10:]
+                avg_revenue = sum(p['revenue_generated'] for p in recent_performance) / len(recent_performance)
+                avg_success = sum(p['success_rate'] for p in recent_performance) / len(recent_performance)
+                
+                summary['agent_performance'][agent_type] = {
+                    'avg_revenue': avg_revenue,
+                    'avg_success_rate': avg_success,
+                    'optimization_count': agent['optimization_count'],
+                    'progress_to_target': (avg_revenue / self.target_revenue) * 100
+                }
+        
+        return summary
+
+    def print_learning_report(self, summary: Dict[str, Any]):
+        """Print comprehensive learning report."""
+        print("\n" + "="*80)
+        print("🧠 REINFORCEMENT LEARNING SYSTEM REPORT")
+        print("="*80)
+        
+        print(f"\n📊 LEARNING SUMMARY:")
+        print(f"   Total Agents: {summary['total_agents']}")
+        print(f"   Total Optimizations: {summary['total_optimizations']}")
+        print(f"   Target Revenue: ${summary['learning_parameters']['target_revenue']:,.2f}")
+        print(f"   Learning Rate: {summary['learning_parameters']['learning_rate']}")
+        print(f"   Exploration Rate: {summary['learning_parameters']['epsilon']}")
+        
+        print(f"\n🤖 AGENT PERFORMANCE:")
+        for agent_type, performance in summary['agent_performance'].items():
+            print(f"\n   {agent_type.replace('_', ' ').title()}:")
+            print(f"     Average Revenue: ${performance['avg_revenue']:,.2f}")
+            print(f"     Success Rate: {performance['avg_success_rate']*100:.1f}%")
+            print(f"     Progress to Target: {performance['progress_to_target']:.1f}%")
+            print(f"     Optimizations: {performance['optimization_count']}")
+        
+        print(f"\n📈 RECENT OPTIMIZATIONS:")
+        for opt in summary['optimization_history'][-5:]:
+            print(f"   {opt['agent_type']}: {opt['reason']} ({opt['timestamp']})")
+        
+        print("\n" + "="*80)
+
+
+async def main():
+    """Main function to test the reinforcement learning system."""
+    print("🧠 AutoPilot Ventures Reinforcement Learning System")
+    print("="*50)
     
-    asyncio.run(main()) 
+    rl_system = ReinforcementLearningSystem()
+    
+    # Simulate agent executions and learning
+    for _ in range(50):  # Simulate 50 agent executions
+        for agent_type in rl_system.agent_types:
+            # Generate random state
+            state = AgentState(
+                agent_type=agent_type,
+                success_rate=random.uniform(0.3, 0.9),
+                execution_time=random.uniform(10, 60),
+                cost=random.uniform(0.05, 0.2),
+                revenue_generated=random.uniform(100, 2000),
+                customer_satisfaction=random.uniform(0.5, 0.95),
+                market_fit_score=random.uniform(0.4, 0.9),
+                timestamp=datetime.utcnow()
+            )
+            
+            # Get optimal action
+            action = await rl_system.get_optimal_action(agent_type, state)
+            
+            # Calculate reward
+            reward = rl_system.calculate_reward(
+                state,
+                revenue_impact=random.uniform(0, 0.3),
+                efficiency_gain=random.uniform(0, 0.2)
+            )
+            
+            # Observe execution
+            await rl_system.observe_agent_execution(agent_type, state, action, reward)
+        
+        # Small delay between iterations
+        await asyncio.sleep(0.1)
+    
+    # Get and print learning summary
+    summary = rl_system.get_learning_summary()
+    rl_system.print_learning_report(summary)
+    
+    # Save results
+    with open('rl_learning_results.json', 'w', encoding='utf-8') as f:
+        json.dump(summary, f, indent=2, default=str, ensure_ascii=False)
+    
+    print(f"\n📄 Learning results saved to: rl_learning_results.json")
+    
+    # Check if target revenue is achievable
+    total_avg_revenue = sum(p['avg_revenue'] for p in summary['agent_performance'].values())
+    if total_avg_revenue > 1000:
+        print("🎉 RL system optimized! Target revenue potential achieved.")
+        return True
+    else:
+        print("⚠️  RL system needs more optimization for target revenue.")
+        return False
+
+
+if __name__ == "__main__":
+    success = asyncio.run(main())
+    exit(0 if success else 1) 

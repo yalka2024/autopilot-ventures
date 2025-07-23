@@ -1,296 +1,640 @@
 #!/usr/bin/env python3
 """
-Payment Dashboard
-Display complete payment infrastructure metrics and analytics
+Real-Time Payment Dashboard
+Provides live monitoring of payment processing across multiple currencies and languages
 """
 
-import sqlite3
-import pandas as pd
-from datetime import datetime, timedelta
-from typing import Dict, List
+import asyncio
 import json
+import logging
+import threading
+import time
+from datetime import datetime, timedelta
+from dataclasses import dataclass, asdict
+from typing import Dict, List, Optional, Any
+from flask import Flask, render_template, jsonify, request
+from flask_socketio import SocketIO, emit
+import plotly.graph_objs as go
+import plotly.utils
+import pandas as pd
+import redis
+from collections import defaultdict, deque
+import websockets
+import aiohttp
+import random
 
-class PaymentDashboard:
-    """Dashboard for payment infrastructure metrics"""
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@dataclass
+class PaymentTransaction:
+    """Payment transaction data"""
+    transaction_id: str
+    amount: float
+    currency: str
+    language: str
+    status: str
+    payment_method: str
+    user_id: str
+    business_id: str
+    timestamp: datetime
+    processing_time: float
+    error_message: Optional[str] = None
+
+@dataclass
+class PaymentMetrics:
+    """Real-time payment metrics"""
+    total_transactions: int
+    successful_transactions: int
+    failed_transactions: int
+    total_volume: float
+    average_amount: float
+    success_rate: float
+    average_processing_time: float
+    currency_distribution: Dict[str, float]
+    language_distribution: Dict[str, float]
+    payment_method_distribution: Dict[str, float]
+    hourly_volume: List[float]
+    error_rate: float
+    timestamp: datetime
+
+@dataclass
+class Alert:
+    """Payment alert"""
+    alert_id: str
+    alert_type: str
+    severity: str
+    message: str
+    timestamp: datetime
+    resolved: bool = False
+    resolution_time: Optional[datetime] = None
+
+class RealTimePaymentDashboard:
+    """Real-time payment monitoring dashboard"""
     
-    def __init__(self):
-        self.db_path = "payment_infrastructure.db"
+    def __init__(self, redis_url: str = "redis://localhost:6379"):
+        self.app = Flask(__name__)
+        self.app.config['SECRET_KEY'] = 'payment-dashboard-secret-key'
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*")
+        
+        # Redis connection for real-time data
+        self.redis_client = redis.from_url(redis_url)
+        
+        # In-memory storage for real-time metrics
+        self.transactions: deque = deque(maxlen=10000)
+        self.metrics_history: deque = deque(maxlen=1000)
+        self.alerts: List[Alert] = []
+        self.currency_rates: Dict[str, float] = {}
+        
+        # Real-time monitoring
+        self.monitoring_active = False
+        self.monitor_thread = None
+        
+        # Setup routes and WebSocket events
+        self._setup_routes()
+        self._setup_websocket_events()
+        
+    def _setup_routes(self):
+        """Setup Flask routes"""
+        
+        @self.app.route('/')
+        def dashboard():
+            """Main dashboard page"""
+            return render_template('payment_dashboard.html')
+        
+        @self.app.route('/api/metrics')
+        def get_metrics():
+            """Get current payment metrics"""
+            current_metrics = self._calculate_current_metrics()
+            return jsonify(asdict(current_metrics))
+        
+        @self.app.route('/api/transactions')
+        def get_transactions():
+            """Get recent transactions"""
+            limit = request.args.get('limit', 100, type=int)
+            recent_transactions = list(self.transactions)[-limit:]
+            return jsonify([asdict(tx) for tx in recent_transactions])
+        
+        @self.app.route('/api/alerts')
+        def get_alerts():
+            """Get active alerts"""
+            active_alerts = [alert for alert in self.alerts if not alert.resolved]
+            return jsonify([asdict(alert) for alert in active_alerts])
+        
+        @self.app.route('/api/currency-rates')
+        def get_currency_rates():
+            """Get current currency exchange rates"""
+            return jsonify(self.currency_rates)
+        
+        @self.app.route('/api/charts/revenue-trend')
+        def get_revenue_trend_chart():
+            """Get revenue trend chart data"""
+            chart_data = self._generate_revenue_trend_chart()
+            return jsonify(chart_data)
+        
+        @self.app.route('/api/charts/currency-distribution')
+        def get_currency_distribution_chart():
+            """Get currency distribution chart data"""
+            chart_data = self._generate_currency_distribution_chart()
+            return jsonify(chart_data)
+        
+        @self.app.route('/api/charts/success-rate')
+        def get_success_rate_chart():
+            """Get success rate chart data"""
+            chart_data = self._generate_success_rate_chart()
+            return jsonify(chart_data)
+        
+        @self.app.route('/api/analytics/performance')
+        def get_performance_analytics():
+            """Get detailed performance analytics"""
+            analytics = self._calculate_performance_analytics()
+            return jsonify(analytics)
     
-    def get_dashboard_data(self) -> Dict:
-        """Get comprehensive dashboard data"""
+    def _setup_websocket_events(self):
+        """Setup WebSocket events for real-time updates"""
+        
+        @self.socketio.on('connect')
+        def handle_connect():
+            """Handle client connection"""
+            logger.info(f"Client connected: {request.sid}")
+            emit('connection_status', {'status': 'connected'})
+        
+        @self.socketio.on('disconnect')
+        def handle_disconnect():
+            """Handle client disconnection"""
+            logger.info(f"Client disconnected: {request.sid}")
+        
+        @self.socketio.on('subscribe_metrics')
+        def handle_metrics_subscription():
+            """Handle metrics subscription"""
+            emit('metrics_update', asdict(self._calculate_current_metrics()))
+        
+        @self.socketio.on('subscribe_transactions')
+        def handle_transactions_subscription():
+            """Handle transactions subscription"""
+            recent_transactions = list(self.transactions)[-50:]
+            emit('transactions_update', [asdict(tx) for tx in recent_transactions])
+        
+        @self.socketio.on('subscribe_alerts')
+        def handle_alerts_subscription():
+            """Handle alerts subscription"""
+            active_alerts = [alert for alert in self.alerts if not alert.resolved]
+            emit('alerts_update', [asdict(alert) for alert in active_alerts])
+    
+    async def add_transaction(self, transaction: PaymentTransaction):
+        """Add a new transaction to the dashboard"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Add to in-memory storage
+            self.transactions.append(transaction)
             
-            # Get customers data
-            customers_df = pd.read_sql_query("SELECT * FROM customers", conn)
+            # Store in Redis for persistence
+            transaction_data = asdict(transaction)
+            transaction_data['timestamp'] = transaction.timestamp.isoformat()
             
-            # Get payment intents data
-            payments_df = pd.read_sql_query("SELECT * FROM payment_intents", conn)
+            self.redis_client.lpush('payment_transactions', json.dumps(transaction_data))
+            self.redis_client.ltrim('payment_transactions', 0, 9999)  # Keep last 10k
             
-            # Get subscriptions data
-            subscriptions_df = pd.read_sql_query("SELECT * FROM subscriptions", conn)
+            # Check for alerts
+            await self._check_alerts(transaction)
             
-            # Get revenue analytics data
-            revenue_df = pd.read_sql_query("SELECT * FROM revenue_analytics", conn)
+            # Emit real-time updates
+            self.socketio.emit('new_transaction', transaction_data)
             
-            # Get tax records data
-            tax_df = pd.read_sql_query("SELECT * FROM tax_records", conn)
+            # Update metrics
+            current_metrics = self._calculate_current_metrics()
+            self.metrics_history.append(current_metrics)
+            self.socketio.emit('metrics_update', asdict(current_metrics))
             
-            # Get webhook events data
-            webhooks_df = pd.read_sql_query("SELECT * FROM webhook_events", conn)
+            logger.info(f"Added transaction {transaction.transaction_id}")
             
-            conn.close()
+        except Exception as e:
+            logger.error(f"Error adding transaction: {e}")
+    
+    async def _check_alerts(self, transaction: PaymentTransaction):
+        """Check for alert conditions"""
+        try:
+            # High failure rate alert
+            recent_transactions = list(self.transactions)[-100:]
+            if len(recent_transactions) >= 10:
+                failed_count = len([tx for tx in recent_transactions if tx.status == 'failed'])
+                failure_rate = failed_count / len(recent_transactions)
+                
+                if failure_rate > 0.1:  # 10% failure rate
+                    await self._create_alert(
+                        "high_failure_rate",
+                        "high",
+                        f"Payment failure rate is {failure_rate:.1%} (threshold: 10%)"
+                    )
             
-            # Calculate metrics
-            total_customers = len(customers_df)
-            total_payments = len(payments_df)
-            successful_payments = len(payments_df[payments_df['status'] == 'succeeded'])
-            total_subscriptions = len(subscriptions_df)
-            active_subscriptions = len(subscriptions_df[subscriptions_df['status'] == 'active'])
+            # High processing time alert
+            if transaction.processing_time > 5.0:  # 5 seconds
+                await self._create_alert(
+                    "high_processing_time",
+                    "medium",
+                    f"Transaction {transaction.transaction_id} took {transaction.processing_time:.2f}s to process"
+                )
             
-            # Calculate revenue metrics
-            total_revenue = revenue_df['revenue'].sum() if len(revenue_df) > 0 else 0
-            total_tax_collected = tax_df['tax_amount'].sum() if len(tax_df) > 0 else 0
+            # Large transaction alert
+            if transaction.amount > 10000:  # $10k threshold
+                await self._create_alert(
+                    "large_transaction",
+                    "low",
+                    f"Large transaction detected: {transaction.currency} {transaction.amount:,.2f}"
+                )
             
-            # Calculate MRR and ARR
-            monthly_subscriptions = subscriptions_df[
-                (subscriptions_df['status'] == 'active') & 
-                (subscriptions_df['interval'] == 'month')
-            ]
-            yearly_subscriptions = subscriptions_df[
-                (subscriptions_df['status'] == 'active') & 
-                (subscriptions_df['interval'] == 'year')
-            ]
+            # Currency-specific alerts
+            if transaction.currency not in self.currency_rates:
+                await self._create_alert(
+                    "unknown_currency",
+                    "medium",
+                    f"Unknown currency detected: {transaction.currency}"
+                )
+                
+        except Exception as e:
+            logger.error(f"Error checking alerts: {e}")
+    
+    async def _create_alert(self, alert_type: str, severity: str, message: str):
+        """Create a new alert"""
+        try:
+            alert = Alert(
+                alert_id=f"alert_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                alert_type=alert_type,
+                severity=severity,
+                message=message,
+                timestamp=datetime.now()
+            )
             
-            mrr = monthly_subscriptions['amount'].sum() if len(monthly_subscriptions) > 0 else 0
-            arr = yearly_subscriptions['amount'].sum() if len(yearly_subscriptions) > 0 else 0
+            self.alerts.append(alert)
             
-            # Calculate conversion rates
-            payment_success_rate = (successful_payments / total_payments * 100) if total_payments > 0 else 0
-            subscription_conversion_rate = (active_subscriptions / total_subscriptions * 100) if total_subscriptions > 0 else 0
+            # Emit real-time alert
+            self.socketio.emit('new_alert', asdict(alert))
             
-            # Get recent activity
-            recent_payments = payments_df.head(5).to_dict('records') if len(payments_df) > 0 else []
-            recent_subscriptions = subscriptions_df.head(5).to_dict('records') if len(subscriptions_df) > 0 else []
-            recent_webhooks = webhooks_df.head(5).to_dict('records') if len(webhooks_df) > 0 else []
+            logger.info(f"Created alert: {alert.alert_id} - {message}")
             
-            # Get customer breakdown
-            paying_customers = len(customers_df[customers_df['total_spent'] > 0])
-            new_customers_30d = len(customers_df[
-                customers_df['created_at'] >= (datetime.now() - timedelta(days=30)).isoformat()
-            ])
+        except Exception as e:
+            logger.error(f"Error creating alert: {e}")
+    
+    def _calculate_current_metrics(self) -> PaymentMetrics:
+        """Calculate current payment metrics"""
+        try:
+            if not self.transactions:
+                return PaymentMetrics(
+                    total_transactions=0,
+                    successful_transactions=0,
+                    failed_transactions=0,
+                    total_volume=0.0,
+                    average_amount=0.0,
+                    success_rate=0.0,
+                    average_processing_time=0.0,
+                    currency_distribution={},
+                    language_distribution={},
+                    payment_method_distribution={},
+                    hourly_volume=[],
+                    error_rate=0.0,
+                    timestamp=datetime.now()
+                )
+            
+            # Basic metrics
+            total_transactions = len(self.transactions)
+            successful_transactions = len([tx for tx in self.transactions if tx.status == 'successful'])
+            failed_transactions = len([tx for tx in self.transactions if tx.status == 'failed'])
+            
+            # Volume calculations
+            total_volume = sum(tx.amount for tx in self.transactions if tx.status == 'successful')
+            average_amount = total_volume / successful_transactions if successful_transactions > 0 else 0
+            
+            # Success rate
+            success_rate = successful_transactions / total_transactions if total_transactions > 0 else 0
+            
+            # Processing time
+            processing_times = [tx.processing_time for tx in self.transactions if tx.processing_time > 0]
+            average_processing_time = sum(processing_times) / len(processing_times) if processing_times else 0
+            
+            # Distributions
+            currency_distribution = self._calculate_distribution([tx.currency for tx in self.transactions])
+            language_distribution = self._calculate_distribution([tx.language for tx in self.transactions])
+            payment_method_distribution = self._calculate_distribution([tx.payment_method for tx in self.transactions])
+            
+            # Hourly volume (last 24 hours)
+            hourly_volume = self._calculate_hourly_volume()
+            
+            # Error rate
+            error_rate = failed_transactions / total_transactions if total_transactions > 0 else 0
+            
+            return PaymentMetrics(
+                total_transactions=total_transactions,
+                successful_transactions=successful_transactions,
+                failed_transactions=failed_transactions,
+                total_volume=total_volume,
+                average_amount=average_amount,
+                success_rate=success_rate,
+                average_processing_time=average_processing_time,
+                currency_distribution=currency_distribution,
+                language_distribution=language_distribution,
+                payment_method_distribution=payment_method_distribution,
+                hourly_volume=hourly_volume,
+                error_rate=error_rate,
+                timestamp=datetime.now()
+            )
+            
+        except Exception as e:
+            logger.error(f"Error calculating metrics: {e}")
+            raise
+    
+    def _calculate_distribution(self, values: List[str]) -> Dict[str, float]:
+        """Calculate distribution of values"""
+        if not values:
+            return {}
+        
+        value_counts = defaultdict(int)
+        total = len(values)
+        
+        for value in values:
+            value_counts[value] += 1
+        
+        return {value: count / total for value, count in value_counts.items()}
+    
+    def _calculate_hourly_volume(self) -> List[float]:
+        """Calculate hourly volume for the last 24 hours"""
+        try:
+            hourly_volumes = [0.0] * 24
+            now = datetime.now()
+            
+            for transaction in self.transactions:
+                if transaction.status == 'successful':
+                    hours_ago = int((now - transaction.timestamp).total_seconds() / 3600)
+                    if 0 <= hours_ago < 24:
+                        hourly_volumes[hours_ago] += transaction.amount
+            
+            return hourly_volumes
+            
+        except Exception as e:
+            logger.error(f"Error calculating hourly volume: {e}")
+            return [0.0] * 24
+    
+    def _generate_revenue_trend_chart(self) -> Dict[str, Any]:
+        """Generate revenue trend chart data"""
+        try:
+            # Get last 30 days of data
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            
+            daily_revenue = defaultdict(float)
+            
+            for transaction in self.transactions:
+                if (transaction.status == 'successful' and 
+                    start_date <= transaction.timestamp <= end_date):
+                    date_key = transaction.timestamp.strftime('%Y-%m-%d')
+                    daily_revenue[date_key] += transaction.amount
+            
+            # Create chart data
+            dates = sorted(daily_revenue.keys())
+            revenues = [daily_revenue[date] for date in dates]
+            
+            chart_data = {
+                'x': dates,
+                'y': revenues,
+                'type': 'scatter',
+                'mode': 'lines+markers',
+                'name': 'Daily Revenue',
+                'line': {'color': '#2E8B57'},
+                'marker': {'size': 6}
+            }
             
             return {
-                "overview": {
-                    "total_customers": total_customers,
-                    "paying_customers": paying_customers,
-                    "new_customers_30d": new_customers_30d,
-                    "total_payments": total_payments,
-                    "successful_payments": successful_payments,
-                    "payment_success_rate": payment_success_rate,
-                    "total_subscriptions": total_subscriptions,
-                    "active_subscriptions": active_subscriptions,
-                    "subscription_conversion_rate": subscription_conversion_rate,
-                    "total_revenue": total_revenue,
-                    "total_tax_collected": total_tax_collected,
-                    "mrr": mrr,
-                    "arr": arr
-                },
-                "recent_payments": recent_payments,
-                "recent_subscriptions": recent_subscriptions,
-                "recent_webhooks": recent_webhooks,
-                "revenue_trends": revenue_df.to_dict('records') if len(revenue_df) > 0 else [],
-                "customer_metrics": {
-                    "average_spend": customers_df['total_spent'].mean() if len(customers_df) > 0 else 0,
-                    "top_spenders": customers_df.nlargest(5, 'total_spent').to_dict('records') if len(customers_df) > 0 else []
+                'data': [chart_data],
+                'layout': {
+                    'title': 'Revenue Trend (Last 30 Days)',
+                    'xaxis': {'title': 'Date'},
+                    'yaxis': {'title': 'Revenue'},
+                    'height': 400
                 }
             }
             
         except Exception as e:
-            print(f"❌ Failed to get dashboard data: {e}")
+            logger.error(f"Error generating revenue trend chart: {e}")
+            return {'data': [], 'layout': {}}
+    
+    def _generate_currency_distribution_chart(self) -> Dict[str, Any]:
+        """Generate currency distribution chart data"""
+        try:
+            current_metrics = self._calculate_current_metrics()
+            
+            currencies = list(current_metrics.currency_distribution.keys())
+            percentages = list(current_metrics.currency_distribution.values())
+            
+            chart_data = {
+                'labels': currencies,
+                'values': percentages,
+                'type': 'pie',
+                'name': 'Currency Distribution',
+                'marker': {
+                    'colors': ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
+                }
+            }
+            
+            return {
+                'data': [chart_data],
+                'layout': {
+                    'title': 'Payment Currency Distribution',
+                    'height': 400
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating currency distribution chart: {e}")
+            return {'data': [], 'layout': {}}
+    
+    def _generate_success_rate_chart(self) -> Dict[str, Any]:
+        """Generate success rate chart data"""
+        try:
+            # Calculate hourly success rates for last 24 hours
+            hourly_success_rates = []
+            now = datetime.now()
+            
+            for hour in range(24):
+                hour_start = now - timedelta(hours=hour + 1)
+                hour_end = now - timedelta(hours=hour)
+                
+                hour_transactions = [
+                    tx for tx in self.transactions
+                    if hour_start <= tx.timestamp < hour_end
+                ]
+                
+                if hour_transactions:
+                    successful = len([tx for tx in hour_transactions if tx.status == 'successful'])
+                    success_rate = successful / len(hour_transactions)
+                else:
+                    success_rate = 0
+                
+                hourly_success_rates.append(success_rate)
+            
+            # Reverse to show chronological order
+            hourly_success_rates.reverse()
+            hours = [f"{i}h ago" for i in range(23, -1, -1)]
+            
+            chart_data = {
+                'x': hours,
+                'y': hourly_success_rates,
+                'type': 'bar',
+                'name': 'Success Rate',
+                'marker': {
+                    'color': ['#2E8B57' if rate > 0.95 else '#FF6B6B' for rate in hourly_success_rates]
+                }
+            }
+            
+            return {
+                'data': [chart_data],
+                'layout': {
+                    'title': 'Success Rate by Hour (Last 24 Hours)',
+                    'xaxis': {'title': 'Time'},
+                    'yaxis': {'title': 'Success Rate', 'range': [0, 1]},
+                    'height': 400
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating success rate chart: {e}")
+            return {'data': [], 'layout': {}}
+    
+    def _calculate_performance_analytics(self) -> Dict[str, Any]:
+        """Calculate detailed performance analytics"""
+        try:
+            current_metrics = self._calculate_current_metrics()
+            
+            # Performance KPIs
+            kpis = {
+                'total_revenue': current_metrics.total_volume,
+                'transaction_count': current_metrics.total_transactions,
+                'success_rate': current_metrics.success_rate,
+                'avg_processing_time': current_metrics.average_processing_time,
+                'error_rate': current_metrics.error_rate
+            }
+            
+            # Top performing currencies
+            top_currencies = sorted(
+                current_metrics.currency_distribution.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:5]
+            
+            # Top performing languages
+            top_languages = sorted(
+                current_metrics.language_distribution.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:5]
+            
+            # Recent trends
+            recent_transactions = list(self.transactions)[-100:]
+            if recent_transactions:
+                recent_success_rate = len([tx for tx in recent_transactions if tx.status == 'successful']) / len(recent_transactions)
+                trend = "improving" if recent_success_rate > current_metrics.success_rate else "declining"
+            else:
+                trend = "stable"
+            
+            return {
+                'kpis': kpis,
+                'top_currencies': top_currencies,
+                'top_languages': top_languages,
+                'trend': trend,
+                'last_updated': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating performance analytics: {e}")
             return {}
     
-    def print_dashboard(self):
-        """Print comprehensive dashboard"""
-        data = self.get_dashboard_data()
-        
-        if not data:
-            print("❌ No dashboard data available")
-            return
-        
-        print("💳 COMPLETE PAYMENT INFRASTRUCTURE DASHBOARD")
-        print("=" * 60)
-        print(f"📅 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print()
-        
-        # Overview Metrics
-        overview = data["overview"]
-        print("📊 OVERVIEW METRICS")
-        print("-" * 30)
-        print(f"👥 Total Customers: {overview['total_customers']}")
-        print(f"💰 Paying Customers: {overview['paying_customers']}")
-        print(f"🆕 New Customers (30d): {overview['new_customers_30d']}")
-        print(f"💳 Total Payments: {overview['total_payments']}")
-        print(f"✅ Successful Payments: {overview['successful_payments']}")
-        print(f"📈 Payment Success Rate: {overview['payment_success_rate']:.1f}%")
-        print(f"🔄 Total Subscriptions: {overview['total_subscriptions']}")
-        print(f"✅ Active Subscriptions: {overview['active_subscriptions']}")
-        print(f"📊 Subscription Conversion: {overview['subscription_conversion_rate']:.1f}%")
-        print()
-        
-        # Revenue Metrics
-        print("💰 REVENUE METRICS")
-        print("-" * 30)
-        print(f"💵 Total Revenue: ${overview['total_revenue']/100:.2f}")
-        print(f"🧾 Tax Collected: ${overview['total_tax_collected']/100:.2f}")
-        print(f"📈 Monthly Recurring Revenue (MRR): ${overview['mrr']/100:.2f}")
-        print(f"📊 Annual Recurring Revenue (ARR): ${overview['arr']/100:.2f}")
-        print()
-        
-        # Customer Metrics
-        customer_metrics = data["customer_metrics"]
-        print("👥 CUSTOMER METRICS")
-        print("-" * 30)
-        print(f"💸 Average Customer Spend: ${customer_metrics['average_spend']/100:.2f}")
-        
-        top_spenders = customer_metrics["top_spenders"]
-        if top_spenders:
-            print(f"🏆 Top Spenders:")
-            for i, customer in enumerate(top_spenders[:3], 1):
-                print(f"   {i}. {customer.get('name', 'Unknown')}: ${customer.get('total_spent', 0)/100:.2f}")
-        print()
-        
-        # Recent Payments
-        recent_payments = data["recent_payments"]
-        if recent_payments:
-            print("💳 RECENT PAYMENTS")
-            print("-" * 30)
-            for payment in recent_payments[:3]:
-                created_at = payment.get('created_at', 'Unknown')
-                if created_at != 'Unknown':
-                    try:
-                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                        created_at = dt.strftime('%m/%d %H:%M')
-                    except:
-                        pass
+    async def start_monitoring(self):
+        """Start real-time monitoring"""
+        if not self.monitoring_active:
+            self.monitoring_active = True
+            self.monitor_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
+            self.monitor_thread.start()
+            logger.info("Started real-time payment monitoring")
+    
+    def _monitoring_loop(self):
+        """Background monitoring loop"""
+        while self.monitoring_active:
+            try:
+                # Update currency rates
+                asyncio.run(self._update_currency_rates())
                 
-                print(f"   ${payment.get('amount', 0)/100:.2f} {payment.get('currency', 'usd').upper()}")
-                print(f"   Status: {payment.get('status', 'Unknown').title()}")
-                print(f"   Date: {created_at}")
-                print()
-        
-        # Recent Subscriptions
-        recent_subscriptions = data["recent_subscriptions"]
-        if recent_subscriptions:
-            print("🔄 RECENT SUBSCRIPTIONS")
-            print("-" * 30)
-            for sub in recent_subscriptions[:3]:
-                created_at = sub.get('created_at', 'Unknown')
-                if created_at != 'Unknown':
-                    try:
-                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                        created_at = dt.strftime('%m/%d %H:%M')
-                    except:
-                        pass
+                # Emit periodic updates
+                current_metrics = self._calculate_current_metrics()
+                self.socketio.emit('metrics_update', asdict(current_metrics))
                 
-                print(f"   ${sub.get('amount', 0)/100:.2f} {sub.get('currency', 'usd').upper()}")
-                print(f"   Status: {sub.get('status', 'Unknown').title()}")
-                print(f"   Interval: {sub.get('interval', 'Unknown').title()}")
-                print(f"   Date: {created_at}")
-                print()
-        
-        # Recent Webhooks
-        recent_webhooks = data["recent_webhooks"]
-        if recent_webhooks:
-            print("📡 RECENT WEBHOOK EVENTS")
-            print("-" * 30)
-            for webhook in recent_webhooks[:3]:
-                processed_at = webhook.get('processed_at', 'Unknown')
-                if processed_at != 'Unknown':
-                    try:
-                        dt = datetime.fromisoformat(processed_at.replace('Z', '+00:00'))
-                        processed_at = dt.strftime('%m/%d %H:%M')
-                    except:
-                        pass
+                time.sleep(5)  # Update every 5 seconds
                 
-                print(f"   {webhook.get('event_type', 'Unknown').replace('_', ' ').title()}")
-                print(f"   Status: {webhook.get('status', 'Unknown').title()}")
-                print(f"   Processed: {processed_at}")
-                print()
-        
-        # Performance Insights
-        print("💡 PERFORMANCE INSIGHTS")
-        print("-" * 30)
-        
-        if overview['total_payments'] > 0:
-            if overview['payment_success_rate'] > 95:
-                print("✅ Excellent payment success rate! Your payment processing is working well.")
-            elif overview['payment_success_rate'] > 90:
-                print("🟡 Good payment success rate. Consider optimizing payment flow.")
-            else:
-                print("🔴 Low payment success rate. Review payment processing and fraud detection.")
+            except Exception as e:
+                logger.error(f"Error in monitoring loop: {e}")
+                time.sleep(10)
+    
+    async def _update_currency_rates(self):
+        """Update currency exchange rates"""
+        try:
+            # Simulate currency rate updates (in real implementation, fetch from API)
+            base_currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD']
             
-            if overview['subscription_conversion_rate'] > 80:
-                print("✅ High subscription conversion rate! Your subscription model is effective.")
-            elif overview['subscription_conversion_rate'] > 60:
-                print("🟡 Moderate subscription conversion rate. Consider improving onboarding.")
-            else:
-                print("🔴 Low subscription conversion rate. Focus on subscription optimization.")
+            for currency in base_currencies:
+                if currency == 'USD':
+                    self.currency_rates[currency] = 1.0
+                else:
+                    # Simulate realistic exchange rates
+                    self.currency_rates[currency] = round(random.uniform(0.8, 1.5), 4)
             
-            if overview['mrr'] > 10000:  # $100 MRR
-                print("💰 Strong MRR! Your recurring revenue model is working.")
-            elif overview['mrr'] > 1000:  # $10 MRR
-                print("🟡 Growing MRR. Focus on scaling successful subscriptions.")
-            else:
-                print("🔴 Low MRR. Focus on converting customers to subscriptions.")
+            # Emit currency rate updates
+            self.socketio.emit('currency_rates_update', self.currency_rates)
             
-            if overview['total_customers'] > 0:
-                customer_ltv = overview['total_revenue'] / overview['total_customers']
-                print(f"💎 Customer LTV: ${customer_ltv/100:.2f}")
-        else:
-            print("📝 No payment activity yet. Start processing real payments!")
-        
-        print()
-        
-        # Recommendations
-        print("🎯 RECOMMENDATIONS")
-        print("-" * 30)
-        
-        if overview['total_payments'] == 0:
-            print("1. 🚀 Start processing real payments")
-            print("2. 💳 Set up payment methods")
-            print("3. 🔄 Create subscription plans")
-            print("4. 📊 Implement analytics tracking")
-            print("5. 🧾 Set up tax calculation")
-        else:
-            if overview['payment_success_rate'] < 95:
-                print("1. 🔍 Review failed payment reasons")
-                print("2. 💳 Optimize payment method options")
-                print("3. 🛡️ Improve fraud detection")
-                print("4. 📱 Enhance mobile payment experience")
-                print("5. 🔄 Test payment flow regularly")
+        except Exception as e:
+            logger.error(f"Error updating currency rates: {e}")
+    
+    def run(self, host: str = '0.0.0.0', port: int = 5001, debug: bool = False):
+        """Run the payment dashboard"""
+        try:
+            # Start monitoring
+            asyncio.run(self.start_monitoring())
             
-            if overview['subscription_conversion_rate'] < 70:
-                print("1. 🎯 Improve subscription onboarding")
-                print("2. 💰 Optimize pricing strategy")
-                print("3. 🎁 Add subscription incentives")
-                print("4. 📧 Enhance subscription marketing")
-                print("5. 🔄 Simplify subscription process")
+            # Run Flask app
+            self.socketio.run(self.app, host=host, port=port, debug=debug)
             
-            if overview['mrr'] < 1000:
-                print("1. 📈 Focus on high-value subscriptions")
-                print("2. 🎯 Target enterprise customers")
-                print("3. 💰 Increase subscription prices")
-                print("4. 🔄 Upsell existing customers")
-                print("5. 📊 Optimize subscription retention")
-        
-        print()
-        print("🚀 Ready to scale your payment infrastructure!")
+        except Exception as e:
+            logger.error(f"Error running payment dashboard: {e}")
+            raise
 
-def main():
-    """Main execution function"""
-    dashboard = PaymentDashboard()
-    dashboard.print_dashboard()
+async def main():
+    """Main function to demonstrate payment dashboard"""
+    dashboard = RealTimePaymentDashboard()
+    
+    # Simulate some transactions
+    async def simulate_transactions():
+        currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD']
+        languages = ['en', 'es', 'fr', 'de', 'pt', 'it', 'ja', 'zh', 'ar', 'hi']
+        payment_methods = ['credit_card', 'paypal', 'stripe', 'bank_transfer']
+        
+        for i in range(50):
+            transaction = PaymentTransaction(
+                transaction_id=f"tx_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i}",
+                amount=random.uniform(10, 1000),
+                currency=random.choice(currencies),
+                language=random.choice(languages),
+                status=random.choice(['successful', 'failed', 'pending']),
+                payment_method=random.choice(payment_methods),
+                user_id=f"user_{i}",
+                business_id=f"business_{i % 10}",
+                timestamp=datetime.now(),
+                processing_time=random.uniform(0.5, 3.0)
+            )
+            
+            await dashboard.add_transaction(transaction)
+            await asyncio.sleep(1)  # Add transaction every second
+    
+    # Start transaction simulation in background
+    asyncio.create_task(simulate_transactions())
+    
+    # Run dashboard
+    dashboard.run(debug=True)
 
 if __name__ == "__main__":
-    main() 
+    asyncio.run(main()) 

@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Payment Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2E8B57;
+            --secondary-color: #4ECDC4;
+            --danger-color: #FF6B6B;
+            --warning-color: #FFE66D;
+            --success-color: #2ECC71;
+            --dark-color: #2C3E50;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .alert-card {
+            border-left: 4px solid var(--danger-color);
+            background: white;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .alert-card.warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .alert-card.info {
+            border-left-color: var(--secondary-color);
+        }
+        
+        .transaction-item {
+            background: white;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+            border-left: 3px solid var(--primary-color);
+            transition: background-color 0.2s;
+        }
+        
+        .transaction-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .status-successful {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .status-failed {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .status-pending {
+            background-color: var(--warning-color);
+            color: #333;
+        }
+        
+        .real-time-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .currency-rate {
+            background: white;
+            padding: 0.5rem;
+            margin: 0.25rem;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .currency-rate .rate-value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .refresh-btn {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #1e6b47;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-credit-card"></i> Real-Time Payment Dashboard</h1>
+                    <p class="mb-0">Live monitoring of payment processing across multiple currencies and languages</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="real-time-indicator"></div>
+                    <span id="connection-status">Connecting...</span>
+                    <br>
+                    <small id="last-update">Last update: Never</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Key Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-revenue">$0</div>
+                    <div class="metric-label">Total Revenue</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="success-rate">0%</div>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-transactions">0</div>
+                    <div class="metric-label">Total Transactions</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-processing-time">0s</div>
+                    <div class="metric-label">Avg Processing Time</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="chart-container">
+                    <h5><i class="fas fa-chart-line"></i> Revenue Trend</h5>
+                    <div id="revenue-chart"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-container">
+                    <h5><i class="fas fa-chart-pie"></i> Currency Distribution</h5>
+                    <div id="currency-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Rate and Alerts Row -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="fas fa-chart-bar"></i> Success Rate by Hour</h5>
+                    <div id="success-rate-chart"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Active Alerts</h5>
+                    <div id="alerts-container">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading alerts...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Currency Rates and Recent Transactions -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="chart-container">
+                    <h5><i class="fas fa-exchange-alt"></i> Currency Rates</h5>
+                    <div id="currency-rates-container">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading rates...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="chart-container">
+                    <h5><i class="fas fa-list"></i> Recent Transactions</h5>
+                    <div id="transactions-container">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading transactions...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Connection status
+        socket.on('connect', function() {
+            document.getElementById('connection-status').textContent = 'Connected';
+            document.getElementById('connection-status').style.color = '#2ECC71';
+        });
+        
+        socket.on('disconnect', function() {
+            document.getElementById('connection-status').textContent = 'Disconnected';
+            document.getElementById('connection-status').style.color = '#FF6B6B';
+        });
+        
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('last-update').textContent = 
+                `Last update: ${now.toLocaleTimeString()}`;
+        }
+        
+        // Format currency
+        function formatCurrency(amount, currency = 'USD') {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currency
+            }).format(amount);
+        }
+        
+        // Update metrics
+        socket.on('metrics_update', function(data) {
+            document.getElementById('total-revenue').textContent = 
+                formatCurrency(data.total_volume);
+            document.getElementById('success-rate').textContent = 
+                `${(data.success_rate * 100).toFixed(1)}%`;
+            document.getElementById('total-transactions').textContent = 
+                data.total_transactions.toLocaleString();
+            document.getElementById('avg-processing-time').textContent = 
+                `${data.average_processing_time.toFixed(2)}s`;
+            
+            updateTimestamp();
+        });
+        
+        // Update transactions
+        socket.on('transactions_update', function(transactions) {
+            const container = document.getElementById('transactions-container');
+            container.innerHTML = '';
+            
+            transactions.slice(0, 10).forEach(tx => {
+                const txElement = document.createElement('div');
+                txElement.className = 'transaction-item';
+                txElement.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <strong>${tx.transaction_id}</strong>
+                            <br><small>${new Date(tx.timestamp).toLocaleTimeString()}</small>
+                        </div>
+                        <div class="col-md-2">
+                            ${formatCurrency(tx.amount, tx.currency)}
+                        </div>
+                        <div class="col-md-2">
+                            <span class="status-badge status-${tx.status}">${tx.status}</span>
+                        </div>
+                        <div class="col-md-2">
+                            ${tx.payment_method}
+                        </div>
+                        <div class="col-md-2">
+                            ${tx.language.toUpperCase()}
+                        </div>
+                        <div class="col-md-1">
+                            ${tx.processing_time.toFixed(2)}s
+                        </div>
+                    </div>
+                `;
+                container.appendChild(txElement);
+            });
+        });
+        
+        // Update alerts
+        socket.on('alerts_update', function(alerts) {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<p class="text-muted">No active alerts</p>';
+                return;
+            }
+            
+            alerts.forEach(alert => {
+                const alertElement = document.createElement('div');
+                alertElement.className = `alert-card ${alert.severity}`;
+                alertElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${alert.alert_type.replace('_', ' ').toUpperCase()}</strong>
+                            <br>${alert.message}
+                        </div>
+                        <small class="text-muted">${new Date(alert.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                `;
+                container.appendChild(alertElement);
+            });
+        });
+        
+        // Update currency rates
+        socket.on('currency_rates_update', function(rates) {
+            const container = document.getElementById('currency-rates-container');
+            container.innerHTML = '';
+            
+            Object.entries(rates).forEach(([currency, rate]) => {
+                const rateElement = document.createElement('div');
+                rateElement.className = 'currency-rate';
+                rateElement.innerHTML = `
+                    <div class="currency">${currency}</div>
+                    <div class="rate-value">${rate.toFixed(4)}</div>
+                `;
+                container.appendChild(rateElement);
+            });
+        });
+        
+        // Load initial data
+        async function loadInitialData() {
+            try {
+                // Load metrics
+                const metricsResponse = await fetch('/api/metrics');
+                const metrics = await metricsResponse.json();
+                socket.emit('metrics_update', metrics);
+                
+                // Load transactions
+                const transactionsResponse = await fetch('/api/transactions?limit=10');
+                const transactions = await transactionsResponse.json();
+                socket.emit('transactions_update', transactions);
+                
+                // Load alerts
+                const alertsResponse = await fetch('/api/alerts');
+                const alerts = await alertsResponse.json();
+                socket.emit('alerts_update', alerts);
+                
+                // Load currency rates
+                const ratesResponse = await fetch('/api/currency-rates');
+                const rates = await ratesResponse.json();
+                socket.emit('currency_rates_update', rates);
+                
+                // Load charts
+                loadCharts();
+                
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+            }
+        }
+        
+        // Load charts
+        async function loadCharts() {
+            try {
+                // Revenue trend chart
+                const revenueResponse = await fetch('/api/charts/revenue-trend');
+                const revenueData = await revenueResponse.json();
+                Plotly.newPlot('revenue-chart', revenueData.data, revenueData.layout);
+                
+                // Currency distribution chart
+                const currencyResponse = await fetch('/api/charts/currency-distribution');
+                const currencyData = await currencyResponse.json();
+                Plotly.newPlot('currency-chart', currencyData.data, currencyData.layout);
+                
+                // Success rate chart
+                const successResponse = await fetch('/api/charts/success-rate');
+                const successData = await successResponse.json();
+                Plotly.newPlot('success-rate-chart', successData.data, successData.layout);
+                
+            } catch (error) {
+                console.error('Error loading charts:', error);
+            }
+        }
+        
+        // Subscribe to real-time updates
+        socket.on('connect', function() {
+            socket.emit('subscribe_metrics');
+            socket.emit('subscribe_transactions');
+            socket.emit('subscribe_alerts');
+        });
+        
+        // Handle new transaction
+        socket.on('new_transaction', function(transaction) {
+            // Add to transactions list
+            const container = document.getElementById('transactions-container');
+            const txElement = document.createElement('div');
+            txElement.className = 'transaction-item';
+            txElement.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <strong>${transaction.transaction_id}</strong>
+                        <br><small>${new Date(transaction.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                    <div class="col-md-2">
+                        ${formatCurrency(transaction.amount, transaction.currency)}
+                    </div>
+                    <div class="col-md-2">
+                        <span class="status-badge status-${transaction.status}">${transaction.status}</span>
+                    </div>
+                    <div class="col-md-2">
+                        ${transaction.payment_method}
+                    </div>
+                    <div class="col-md-2">
+                        ${transaction.language.toUpperCase()}
+                    </div>
+                    <div class="col-md-1">
+                        ${transaction.processing_time.toFixed(2)}s
+                    </div>
+                </div>
+            `;
+            
+            // Insert at the top
+            container.insertBefore(txElement, container.firstChild);
+            
+            // Remove old transactions if more than 10
+            const transactions = container.querySelectorAll('.transaction-item');
+            if (transactions.length > 10) {
+                transactions[transactions.length - 1].remove();
+            }
+        });
+        
+        // Handle new alert
+        socket.on('new_alert', function(alert) {
+            const container = document.getElementById('alerts-container');
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert-card ${alert.severity}`;
+            alertElement.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>${alert.alert_type.replace('_', ' ').toUpperCase()}</strong>
+                        <br>${alert.message}
+                    </div>
+                    <small class="text-muted">${new Date(alert.timestamp).toLocaleTimeString()}</small>
+                </div>
+            `;
+            
+            // Insert at the top
+            container.insertBefore(alertElement, container.firstChild);
+        });
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+            
+            // Refresh charts every 30 seconds
+            setInterval(loadCharts, 30000);
+        });
+    </script>
+</body>
+</html> 

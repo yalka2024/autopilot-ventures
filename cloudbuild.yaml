@@ -15,6 +15,53 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
   
+  # Create GKE cluster if it doesn't exist
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'container'
+      - 'clusters'
+      - 'create'
+      - 'autopilot-cluster'
+      - '--region=us-central1'
+      - '--num-nodes=3'
+      - '--min-nodes=1'
+      - '--max-nodes=10'
+      - '--enable-autoscaling'
+      - '--machine-type=e2-standard-2'
+      - '--disk-size=50'
+      - '--enable-network-policy'
+      - '--enable-ip-alias'
+      - '--workload-pool=$PROJECT_ID.svc.id.goog'
+      - '--quiet'
+    id: 'create-cluster'
+    waitFor: ['-']
+    allowFailure: true
+  
+  # Get cluster credentials
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'container'
+      - 'clusters'
+      - 'get-credentials'
+      - 'autopilot-cluster'
+      - '--region=us-central1'
+      - '--project=$PROJECT_ID'
+    id: 'get-credentials'
+    waitFor: ['create-cluster']
+  
+  # Create namespace
+  - name: 'gcr.io/cloud-builders/kubectl'
+    args:
+      - 'create'
+      - 'namespace'
+      - 'autopilot-ventures'
+    env:
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
+    id: 'create-namespace'
+    waitFor: ['get-credentials']
+    allowFailure: true
+  
   # Deploy to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
@@ -26,6 +73,8 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=autopilot-cluster'
+    id: 'deploy'
+    waitFor: ['create-namespace']
 
 images:
   - 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'

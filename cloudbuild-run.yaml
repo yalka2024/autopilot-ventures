@@ -1,0 +1,43 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'Dockerfile.gcp', '-t', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA', '.']
+  
+  # Push the Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA']
+  
+  # Tag the image as 'latest'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['tag', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
+  
+  # Push the 'latest' tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
+  
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'autopilot-ventures'
+      - '--image=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=2Gi'
+      - '--cpu=2'
+      - '--max-instances=10'
+      - '--min-instances=1'
+      - '--set-env-vars=PORT=8080,PYTHONPATH=/app'
+      - '--set-cloudsql-instances=$PROJECT_ID:us-central1:autopilot-ventures-db'
+    id: 'deploy-cloud-run'
+
+images:
+  - 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/autopilot-ventures:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8' 

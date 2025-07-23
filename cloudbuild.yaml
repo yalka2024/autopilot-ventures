@@ -30,8 +30,7 @@ steps:
       - '--cpu=2'
       - '--max-instances=10'
       - '--min-instances=1'
-      - '--set-env-vars=PORT=8080,PYTHONPATH=/app,ENVIRONMENT=production'
-      - '--set-env-vars=LOG_LEVEL=INFO'
+      - '--set-env-vars=PYTHONPATH=/app,ENVIRONMENT=production,LOG_LEVEL=INFO'
     id: 'deploy-cloud-run'
 
 images:

@@ -19,12 +19,12 @@ RUN apt-get update && apt-get install -y \
 # Set work directory
 WORKDIR /app
 
-# Copy enhanced requirements first for better caching
-COPY requirements_enhanced.txt .
+# Copy minimal requirements first for better caching
+COPY requirements-minimal.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements_enhanced.txt
+    pip install --no-cache-dir -r requirements-minimal.txt
 
 # Copy application code
 COPY . .
@@ -44,5 +44,5 @@ EXPOSE 8080 9090
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-# Default command for Google Cloud - use enhanced web server
-CMD ["python", "enhanced_web_server.py"] 
+# Default command for Google Cloud - use simplified enhanced web server
+CMD ["python", "simple_enhanced_server.py"] 

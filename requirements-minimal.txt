@@ -1,6 +1,11 @@
-# Minimal requirements for deployment testing
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-python-dotenv>=1.0.0
-requests>=2.31.0
-pydantic>=2.0.0 
+# Core dependencies only
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# HTTP and networking
+requests==2.31.0
+
+# Configuration
+python-dotenv==1.0.0 

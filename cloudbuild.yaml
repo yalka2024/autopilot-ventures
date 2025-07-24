@@ -4,17 +4,11 @@ steps:
     args: 
       - 'build'
       - '--platform=linux/amd64'
-      - '-t=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
       - '-t=gcr.io/$PROJECT_ID/autopilot-ventures:latest'
       - '.'
     id: 'build-image'
   
   # Push the Docker image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA']
-    waitFor: ['build-image']
-  
-  # Push the 'latest' tag
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
     waitFor: ['build-image']
@@ -25,7 +19,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'autopilot-ventures'
-      - '--image=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/autopilot-ventures:latest'
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -42,7 +36,6 @@ steps:
     waitFor: ['build-image']
 
 images:
-  - 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/autopilot-ventures:latest'
 
 options:

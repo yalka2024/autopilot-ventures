@@ -1,0 +1,182 @@
+# AutoPilot Ventures CI/CD Configuration
+# Self-Healing Deployment System
+
+deployment:
+  strategy: "rolling"
+  max_instances: 10
+  min_instances: 1
+  timeout_seconds: 600
+  health_check_path: "/health"
+  health_check_timeout: 30
+  rollback_enabled: true
+  auto_scale: true
+  
+  # Resource limits
+  memory: "2Gi"
+  cpu: "2"
+  concurrency: 80
+  
+  # Environment variables
+  environment:
+    PYTHONPATH: "/app"
+    ENVIRONMENT: "production"
+    LOG_LEVEL: "INFO"
+    ENABLE_HEALTH_MONITORING: "true"
+    ENABLE_BIGQUERY_ANALYTICS: "true"
+    ENABLE_SELF_HEALING: "true"
+
+monitoring:
+  enabled: true
+  check_interval: 30  # seconds
+  failure_threshold: 3
+  success_threshold: 2
+  metrics_collection: true
+  
+  # Health check configuration
+  health_checks:
+    - name: "api_endpoints"
+      path: "/health"
+      timeout: 10
+      expected_status: 200
+    - name: "database_connection"
+      timeout: 5
+    - name: "redis_connection"
+      timeout: 5
+    - name: "ai_services"
+      timeout: 10
+
+recovery:
+  enabled: true
+  max_attempts: 5
+  backoff_multiplier: 2
+  initial_delay: 60  # seconds
+  
+  # Recovery strategies (in order of execution)
+  strategies:
+    - name: "restart_service"
+      description: "Restart the Cloud Run service"
+      timeout: 60
+    - name: "scale_resources"
+      description: "Scale up resources"
+      timeout: 120
+    - name: "clear_cache"
+      description: "Clear application cache"
+      timeout: 30
+    - name: "redeploy_previous"
+      description: "Redeploy previous version"
+      timeout: 300
+
+analytics:
+  bigquery:
+    enabled: true
+    project_id: "autopilot-ventures-core-466708"
+    dataset_id: "autopilot_ventures_analytics"
+    batch_size: 1000
+    batch_timeout: 60
+    
+    # Tables
+    tables:
+      request_logs: "request_logs"
+      business_metrics: "business_metrics"
+      system_metrics: "system_metrics"
+  
+  # Metrics collection
+  metrics:
+    request_logging: true
+    business_metrics: true
+    system_metrics: true
+    performance_metrics: true
+
+# Google Cloud configuration
+gcp:
+  project_id: "autopilot-ventures-core-466708"
+  region: "us-central1"
+  service_name: "autopilot-ventures"
+  
+  # Container Registry
+  container_registry: "gcr.io"
+  image_name: "autopilot-ventures"
+  
+  # Cloud Run configuration
+  cloud_run:
+    platform: "managed"
+    allow_unauthenticated: true
+    port: 8080
+    concurrency: 80
+    timeout: 600
+    memory: "2Gi"
+    cpu: "2"
+    max_instances: 10
+    min_instances: 1
+
+# Security configuration
+security:
+  # API keys and secrets
+  secrets:
+    openai_api_key: "${OPENAI_API_KEY}"
+    anthropic_api_key: "${ANTHROPIC_API_KEY}"
+    google_credentials: "${GOOGLE_APPLICATION_CREDENTIALS}"
+  
+  # CORS settings
+  cors:
+    allow_origins: ["*"]
+    allow_credentials: true
+    allow_methods: ["*"]
+    allow_headers: ["*"]
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Log destinations
+  destinations:
+    - type: "console"
+      enabled: true
+    - type: "file"
+      enabled: true
+      path: "/app/logs/app.log"
+      max_size: "100MB"
+      backup_count: 5
+    - type: "bigquery"
+      enabled: true
+      table: "application_logs"
+
+# Performance configuration
+performance:
+  # Response time thresholds
+  response_time:
+    warning_threshold_ms: 1000
+    error_threshold_ms: 5000
+  
+  # Resource usage thresholds
+  resources:
+    cpu_warning_percent: 70
+    cpu_error_percent: 90
+    memory_warning_percent: 70
+    memory_error_percent: 90
+    disk_warning_percent: 80
+    disk_error_percent: 95
+
+# Business metrics configuration
+business_metrics:
+  # Metrics to track
+  metrics:
+    - name: "business_created"
+      category: "business_operations"
+      unit: "count"
+    - name: "revenue_generated"
+      category: "financial"
+      unit: "currency"
+    - name: "customer_acquisition"
+      category: "growth"
+      unit: "count"
+    - name: "conversion_rate"
+      category: "performance"
+      unit: "percentage"
+  
+  # Alerting thresholds
+  alerts:
+    revenue_threshold: 1000
+    conversion_rate_threshold: 0.05
+    customer_acquisition_threshold: 10 

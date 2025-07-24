@@ -1,0 +1,156 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation
+README.md
+*.md
+docs/
+documentation/
+
+# Development and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Logs and temporary files
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cloud and deployment
+.cloudbuild/
+cloudbuild.yaml
+Dockerfile*
+.dockerignore
+
+# Data and models (exclude large files)
+data/
+models/
+*.pkl
+*.h5
+*.hdf5
+*.joblib
+*.model
+
+# MLflow artifacts
+mlruns/
+mlartifacts/
+
+# ChromaDB data
+chroma_db/
+
+# Backups
+backups/
+
+# Exports
+exports/
+
+# Uploads
+uploads/
+
+# Google Cloud SDK
+google-cloud-sdk/
+
+# Vercel apps
+vercel_apps/
+
+# Ecommerce apps
+ecommerce/
+
+# SaaS apps
+saas_apps/
+
+# Monitoring data
+monitoring/grafana/data/
+monitoring/prometheus/data/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# IDE and editor files
+*.sublime-project
+*.sublime-workspace
+.atom/
+.brackets.json
+
+# Local configuration
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Cache directories
+.cache/
+cache/
+
+# Temporary build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll 

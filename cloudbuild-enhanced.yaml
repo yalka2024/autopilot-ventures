@@ -142,14 +142,5 @@ options:
     - 'DOCKER_BUILDKIT=1'
     - 'COMPOSE_DOCKER_CLI_BUILD=1'
 
-# Substitutions
-substitutions:
-  _REGION: 'us-central1'
-  _SERVICE_NAME: 'autopilot-ventures'
-  _MEMORY: '2Gi'
-  _CPU: '2'
-  _MAX_INSTANCES: '10'
-  _MIN_INSTANCES: '1'
-
 # Timeout
 timeout: '1800s' 

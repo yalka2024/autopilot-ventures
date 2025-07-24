@@ -1,41 +1,41 @@
 steps:
-  # Build the Docker image with minimal test configuration
+  # Build the Docker image with production configuration
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '--platform', 'linux/amd64', '-f', 'Dockerfile.test', '-t', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA', '.']
+    args: 
+      - 'build'
+      - '--platform=linux/amd64'
+      - '-t=gcr.io/$PROJECT_ID/autopilot-ventures:latest'
+      - '.'
+    id: 'build-image'
   
   # Push the Docker image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA']
-  
-  # Tag the image as 'latest'
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['tag', 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
-  
-  # Push the 'latest' tag
-  - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/autopilot-ventures:latest']
+    waitFor: ['build-image']
   
-  # Deploy to Cloud Run with extended timeout
+  # Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
       - 'autopilot-ventures'
-      - '--image=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/autopilot-ventures:latest'
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=8080'
-      - '--memory=512Mi'
-      - '--cpu=1'
-      - '--max-instances=5'
-      - '--min-instances=0'
-      - '--timeout=600'
-      - '--concurrency=80'
+      - '--memory=1Gi'
+      - '--cpu=2'
+      - '--max-instances=10'
+      - '--min-instances=1'
+      - '--timeout=900'
+      - '--concurrency=100'
+      - '--set-env-vars=ENVIRONMENT=production'
+      - '--set-env-vars=WORKERS=2'
     id: 'deploy-cloud-run'
+    waitFor: ['build-image']
 
 images:
-  - 'gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/autopilot-ventures:latest'
 
 options:

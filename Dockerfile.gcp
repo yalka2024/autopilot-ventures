@@ -4,45 +4,37 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
-ENV DEBIAN_FRONTEND=noninteractive
-# PORT will be set by Cloud Run automatically
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
     curl \
-    git \
-    postgresql-client \
-    redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Set work directory
 WORKDIR /app
 
-# Copy minimal requirements first for better caching
+# Copy requirements first for better caching
 COPY requirements-minimal.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements-minimal.txt
 
-# Copy application code
-COPY . .
+# Copy only necessary application files
+COPY simple_enhanced_server.py .
+COPY main.py .
+COPY config.py .
+COPY utils.py .
 
 # Create necessary directories
-RUN mkdir -p /app/logs /app/data /app/uploads /app/exports /app/backups /app/mlruns
+RUN mkdir -p /app/logs /app/data
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app && \
-    chown -R app:app /app
-USER app
+# Expose port
+EXPOSE 8080
 
-# Expose ports for Google Cloud
-EXPOSE 8080 9090
-
-# Health check for Google Cloud
+# Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Default command for Google Cloud - use simplified enhanced web server
+# Run the simplified enhanced server
 CMD ["python", "simple_enhanced_server.py"] 

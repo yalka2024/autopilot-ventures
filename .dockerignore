@@ -1,0 +1,87 @@
+# Google Cloud SDK (very large)
+google-cloud-sdk/
+.gcloud/
+
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Data directories
+data/
+uploads/
+exports/
+backups/
+mlruns/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Documentation
+*.md
+docs/
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Deployment files
+*.yaml
+*.yml
+!cloudbuild*.yaml
+!cloudbuild*.yml
+!k8s*.yaml
+!k8s*.yml
+
+# Other
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log* 

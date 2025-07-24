@@ -1,5 +1,5 @@
 # Minimal test Dockerfile for Cloud Run
-FROM --platform=linux/amd64 python:3.11-slim
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

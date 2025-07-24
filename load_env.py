@@ -45,12 +45,12 @@ ENVIRONMENT=production
     # Load environment variables
     load_dotenv(env_path)
     
-    # Check required environment variables
+    # Check required environment variables (using existing .env variable names)
     required_vars = [
-        'OPENAI_API_KEY',
+        'OPENAI_SECRET_KEY',  # Changed from OPENAI_API_KEY
         'STRIPE_SECRET_KEY', 
-        'STRIPE_PUBLISHABLE_KEY',
-        'GUMROAD_API_KEY'
+        'STRIPE_PUBLISHABLE_KEY'
+        # Removed GUMROAD_API_KEY as it's not in the existing .env
     ]
     
     missing_vars = []
@@ -63,9 +63,9 @@ ENVIRONMENT=production
         return False
     
     print("✅ Environment variables loaded successfully!")
-    print(f"🔑 OpenAI API Key: {os.getenv('OPENAI_API_KEY', 'Not set')[:20]}...")
+    print(f"🔑 OpenAI API Key: {os.getenv('OPENAI_SECRET_KEY', 'Not set')[:20]}...")
     print(f"💳 Stripe Secret Key: {os.getenv('STRIPE_SECRET_KEY', 'Not set')[:20]}...")
-    print(f"🛒 Gumroad API Key: {os.getenv('GUMROAD_API_KEY', 'Not set')[:20]}...")
+    print(f"🔍 SerpAPI Key: {os.getenv('SERPAPI_KEY', 'Not set')[:20]}...")
     
     return True
 
@@ -75,14 +75,12 @@ def get_api_keys():
         return None
     
     return {
-        'openai_api_key': os.getenv('OPENAI_API_KEY'),
+        'openai_api_key': os.getenv('OPENAI_SECRET_KEY'),
         'stripe_secret_key': os.getenv('STRIPE_SECRET_KEY'),
         'stripe_publishable_key': os.getenv('STRIPE_PUBLISHABLE_KEY'),
-        'gumroad_api_key': os.getenv('GUMROAD_API_KEY'),
-        'slack_webhook_url': os.getenv('SLACK_WEBHOOK_URL'),
-        'discord_webhook_url': os.getenv('DISCORD_WEBHOOK_URL'),
-        'database_url': os.getenv('DATABASE_URL'),
+        'serpapi_key': os.getenv('SERPAPI_KEY'),
         'fernet_key': os.getenv('FERNET_KEY'),
+        'jwt_secret': os.getenv('JWT_SECRET'),
         'environment': os.getenv('ENVIRONMENT', 'production')
     }
 

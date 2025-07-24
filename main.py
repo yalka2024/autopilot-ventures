@@ -10,6 +10,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -107,6 +111,18 @@ async def get_agent(agent_id: str) -> Dict[str, Any]:
         "status": "active",
         "capabilities": ["nlp", "ml", "automation"],
         "languages": ["en", "es", "fr", "de"]
+    }
+
+@app.get("/api/v1/config/keys")
+async def get_api_keys_status() -> Dict[str, Any]:
+    """Get API keys configuration status."""
+    return {
+        "openai_key": "configured" if os.getenv("OPENAI_SECRET_KEY") else "missing",
+        "stripe_secret_key": "configured" if os.getenv("STRIPE_SECRET_KEY") else "missing",
+        "stripe_publishable_key": "configured" if os.getenv("STRIPE_PUBLISHABLE_KEY") else "missing",
+        "serpapi_key": "configured" if os.getenv("SERPAPI_KEY") else "missing",
+        "fernet_key": "configured" if os.getenv("FERNET_KEY") else "missing",
+        "jwt_secret": "configured" if os.getenv("JWT_SECRET") else "missing"
     }
 
 @app.exception_handler(Exception)

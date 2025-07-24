@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="AutoPilot Ventures Platform",
     description="Multilingual AI Agent Platform for Autonomous Business Operations",
-    version="1.0.0",
+    version="1.0.1",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -41,9 +41,10 @@ async def root() -> Dict[str, str]:
     """Root endpoint with platform information."""
     return {
         "message": "AutoPilot Ventures Platform",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "status": "operational",
-        "description": "Multilingual AI Agent Platform"
+        "description": "Multilingual AI Agent Platform",
+        "deployment": "production"
     }
 
 @app.get("/health")
@@ -56,7 +57,7 @@ async def health_check() -> Dict[str, Any]:
         return {
             "status": "healthy",
             "timestamp": "2024-01-01T00:00:00Z",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "services": {
                 "database": "healthy",
                 "redis": "healthy",

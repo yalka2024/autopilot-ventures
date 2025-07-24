@@ -1,10 +1,10 @@
 steps:
-  # Build the Docker image with minimal configuration
+  # Build the Docker image with production configuration
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
       - '--platform=linux/amd64'
-      - '-f=Dockerfile.minimal'
+      - '--target=final'
       - '-t=gcr.io/$PROJECT_ID/autopilot-ventures:$COMMIT_SHA'
       - '-t=gcr.io/$PROJECT_ID/autopilot-ventures:latest'
       - '.'

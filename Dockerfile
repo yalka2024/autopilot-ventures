@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for AutoPilot Ventures - Multilingual Agent Platform
+# Multi-stage Dockerfile for AutoPilot Ventures - Production Ready
 # Stage 1: Base image with common dependencies
 FROM python:3.11-slim as base
 
@@ -30,19 +30,12 @@ WORKDIR /app
 
 # Copy requirements files
 COPY requirements.txt .
-COPY requirements-dev.txt* .
 
 # Install Python dependencies with caching
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -r requirements.txt
 
-# Stage 3: Development dependencies (optional)
-FROM dependencies as development
-
-# Install development dependencies if requirements-dev.txt exists
-RUN if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-
-# Stage 4: Application build
+# Stage 3: Application build
 FROM dependencies as builder
 
 # Copy application code
@@ -51,7 +44,7 @@ COPY . .
 # Install application in development mode
 RUN pip install -e .
 
-# Stage 5: Production runtime
+# Stage 4: Production runtime
 FROM base as production
 
 # Set work directory
@@ -85,77 +78,8 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Default command
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 
-# Stage 6: Multilingual agent preparation
-FROM production as multilingual-agent
-
-# Install additional language support
-RUN apt-get update && apt-get install -y \
-    locales \
-    language-pack-en \
-    language-pack-es \
-    language-pack-fr \
-    language-pack-de \
-    language-pack-it \
-    language-pack-pt \
-    language-pack-ru \
-    language-pack-zh \
-    language-pack-ja \
-    language-pack-ko \
-    && rm -rf /var/lib/apt/lists/*
-
-# Generate locales
-RUN locale-gen en_US.UTF-8 && \
-    locale-gen es_ES.UTF-8 && \
-    locale-gen fr_FR.UTF-8 && \
-    locale-gen de_DE.UTF-8 && \
-    locale-gen it_IT.UTF-8 && \
-    locale-gen pt_BR.UTF-8 && \
-    locale-gen ru_RU.UTF-8 && \
-    locale-gen zh_CN.UTF-8 && \
-    locale-gen ja_JP.UTF-8 && \
-    locale-gen ko_KR.UTF-8
-
-# Set default locale
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
-
-# Install additional Python packages for multilingual support
-RUN pip install --no-cache-dir \
-    polyglot \
-    langdetect \
-    googletrans==4.0.0rc1 \
-    sentencepiece \
-    sacremoses
-
-# Copy multilingual models and data
-COPY --from=builder /app/models /app/models
-COPY --from=builder /app/language_data /app/language_data
-
-# Stage 7: Testing environment
-FROM development as testing
-
-# Install testing dependencies
-RUN pip install --no-cache-dir \
-    pytest \
-    pytest-asyncio \
-    pytest-cov \
-    pytest-mock \
-    hypothesis \
-    coverage
-
-# Copy test files
-COPY tests/ /app/tests/
-COPY pytest.ini* /app/
-
-# Set test environment
-ENV PYTHONPATH=/app
-ENV TESTING=1
-
-# Default test command
-CMD ["pytest", "-v", "--cov=app", "--cov-report=html"]
-
-# Stage 8: Final production image
-FROM multilingual-agent as final
+# Stage 5: Final production image with labels
+FROM production as final
 
 # Add labels for better container management
 LABEL maintainer="AutoPilot Ventures Team"

@@ -28,7 +28,7 @@ try {
     Write-Host "📋 Manual Steps to Fix:" -ForegroundColor Yellow
     Write-Host "1. Go to Google Cloud Console: https://console.cloud.google.com" -ForegroundColor White
     Write-Host "2. Select project: $PROJECT_ID" -ForegroundColor White
-    Write-Host "3. Go to IAM & Admin > IAM" -ForegroundColor White
+    Write-Host "3. Go to IAM `"&`" Admin > IAM" -ForegroundColor White
     Write-Host "4. Find the Cloud Build service account" -ForegroundColor White
     Write-Host "5. Add these roles:" -ForegroundColor White
     Write-Host "   - Cloud Run Admin" -ForegroundColor White
